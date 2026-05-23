@@ -12,7 +12,7 @@
   header{margin-bottom:44px}
   h1{font-size:30px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
   .sub{color:var(--muted);font-size:15px}
-  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
   .card{display:block;text-decoration:none;color:inherit;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:26px 22px;transition:border-color .15s,box-shadow .15s}
   .card:hover{border-color:var(--brand);box-shadow:0 4px 18px rgba(18,87,214,.10)}
   .card h2{font-size:17px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
@@ -23,6 +23,7 @@
   .card.is-placeholder{opacity:.3;border-style:dashed;box-shadow:none}
   .card.is-clone{cursor:grabbing;background:var(--bg);border-color:var(--brand);box-shadow:0 12px 30px rgba(18,87,214,.20);transform:scale(1.02)}
   .updated{margin-top:44px;padding-top:20px;border-top:1px solid var(--border);text-align:left;color:var(--muted);font-size:13px}
+  @media (max-width:600px){.grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
