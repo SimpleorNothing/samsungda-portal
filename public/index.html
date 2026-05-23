@@ -19,12 +19,12 @@
   .card h2::after{content:'→';font-size:14px;opacity:.4;margin-left:auto;flex-shrink:0}
   .card p{font-size:13px;color:var(--muted);line-height:1.65}
   .card{user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
-  .card.is-placeholder{opacity:.3;border-style:dashed;box-shadow:none}
-  .card.is-clone{cursor:grabbing;background:var(--bg);border-color:var(--brand);box-shadow:0 12px 30px rgba(18,87,214,.20);transform:scale(1.02)}
+  /* 데스크톱 자유 배치(그리드 칸 스냅) 모드 */
+  .grid.is-free{display:block;position:relative}
+  .grid.is-free .card{position:absolute;margin:0;cursor:grab}
+  .grid.is-free .card.is-dragging{z-index:1000;cursor:grabbing;border-color:var(--brand);box-shadow:0 14px 34px rgba(18,87,214,.22)}
   .updated{margin-top:44px;padding-top:20px;border-top:1px solid var(--border);text-align:left;color:var(--muted);font-size:13px}
   @media (max-width:600px){.grid{grid-template-columns:repeat(2,1fr)}}
-  /* 마우스(데스크톱)에서만 끌어서 위치 변경 가능 */
-  @media (hover:hover) and (pointer:fine){.card{cursor:grab}.card:active{cursor:grabbing}}
 </style>
 </head>
 <body>
@@ -57,24 +57,90 @@
 (function(){
   var grid = document.querySelector('.grid');
   if(!grid) return;
-  var KEY = 'portal-card-order';
   var cards = Array.prototype.slice.call(grid.querySelectorAll('.card'));
+  if(!cards.length) return;
 
-  // 저장된 순서 복원
-  try{
-    var saved = JSON.parse(localStorage.getItem(KEY) || '[]');
-    if(Array.isArray(saved)){
-      var map = {};
-      cards.forEach(function(c){ map[c.getAttribute('href')] = c; });
-      saved.forEach(function(id){ if(map[id]) grid.appendChild(map[id]); });
+  var COLS = 3, GAP = 14, KEY = 'portal-card-cells';
+  var colW = 0, rowH = 0, cells = {};
+
+  function isDesktop(){ return window.matchMedia('(min-width:601px)').matches; }
+  function loadCells(){ try{ return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; }catch(e){ return {}; } }
+  function saveCells(){ try{ localStorage.setItem(KEY, JSON.stringify(cells)); }catch(e){} }
+
+  // 셀 좌표 구성: 저장값 우선, 없으면 HTML 순서대로 채움. 중복은 빈 칸으로 보정.
+  function buildCells(){
+    var saved = loadCells();
+    cells = {};
+    cards.forEach(function(c, i){
+      var href = c.getAttribute('href');
+      var s = saved[href];
+      cells[href] = (s && typeof s.col==='number' && typeof s.row==='number')
+        ? { col:s.col, row:s.row } : { col:i%COLS, row:Math.floor(i/COLS) };
+    });
+    var occupied = {};
+    function free(){
+      for(var r=0;r<cards.length;r++) for(var c=0;c<COLS;c++){ if(!occupied[c+','+r]) return {col:c,row:r}; }
+      return {col:0,row:0};
     }
-  }catch(e){}
-
-  function saveOrder(){
-    var ids = Array.prototype.slice.call(grid.querySelectorAll('.card'))
-      .map(function(c){ return c.getAttribute('href'); });
-    try{ localStorage.setItem(KEY, JSON.stringify(ids)); }catch(e){}
+    cards.forEach(function(c){
+      var href=c.getAttribute('href'), cell=cells[href], k=cell.col+','+cell.row;
+      if(cell.col<0||cell.col>=COLS||cell.row<0||occupied[k]){ cell=free(); k=cell.col+','+cell.row; }
+      cells[href]=cell; occupied[k]=true;
+    });
   }
+
+  function measure(){
+    grid.classList.remove('is-free');
+    cards.forEach(function(c){ c.removeAttribute('style'); });
+    grid.style.height = '';
+    var cw = grid.clientWidth;
+    colW = (cw - GAP*(COLS-1)) / COLS;
+    var maxH = 0;
+    cards.forEach(function(c){
+      c.style.cssText = 'position:absolute;width:'+colW+'px;left:-9999px;top:0';
+      if(c.offsetHeight > maxH) maxH = c.offsetHeight;
+    });
+    rowH = Math.ceil(maxH);
+  }
+
+  function cellLeft(col){ return Math.round(col*(colW+GAP)); }
+  function cellTop(row){ return Math.round(row*(rowH+GAP)); }
+
+  function applyAll(animate){
+    var maxRow = 0;
+    cards.forEach(function(c){
+      var cell = cells[c.getAttribute('href')];
+      if(animate){
+        c.style.transition = 'left .16s ease, top .16s ease';
+        c.style.left = cellLeft(cell.col)+'px';
+        c.style.top  = cellTop(cell.row)+'px';
+      }else{
+        c.style.cssText = 'position:absolute;width:'+colW+'px;height:'+rowH+'px;left:'+cellLeft(cell.col)+'px;top:'+cellTop(cell.row)+'px';
+      }
+      if(cell.row > maxRow) maxRow = cell.row;
+    });
+    grid.style.height = ((maxRow+1)*(rowH+GAP) - GAP) + 'px';
+    if(animate) setTimeout(function(){ cards.forEach(function(c){ c.style.transition=''; }); }, 200);
+  }
+
+  function layout(){
+    if(st && st.dragging) return;
+    if(!isDesktop()){
+      grid.classList.remove('is-free');
+      grid.style.height = '';
+      cards.forEach(function(c){ c.removeAttribute('style'); });
+      return;
+    }
+    buildCells();
+    measure();
+    grid.classList.add('is-free');
+    applyAll(false);
+  }
+
+  layout();
+  window.addEventListener('load', layout);
+  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(layout); }
+  var rT; window.addEventListener('resize', function(){ clearTimeout(rT); rT = setTimeout(layout, 150); });
 
   // 기본 링크 드래그 비활성화
   cards.forEach(function(c){
@@ -85,70 +151,55 @@
   var THRESHOLD = 5, st = null, justDragged = false;
 
   grid.addEventListener('pointerdown', function(e){
-    if(e.pointerType !== 'mouse' || e.button !== 0) return; // 마우스에서만 위치 변경
+    if(!isDesktop()) return;                       // 모바일: 위치 이동 없음
+    if(e.pointerType !== 'mouse' || e.button !== 0) return; // 마우스에서만
     var card = e.target.closest && e.target.closest('.card');
     if(!card || card.parentNode !== grid) return;
-    st = { card:card, sx:e.clientX, sy:e.clientY, dragging:false, gx:0, gy:0, clone:null };
+    var r = card.getBoundingClientRect(), base = grid.getBoundingClientRect();
+    st = { card:card, dragging:false, sx:e.clientX, sy:e.clientY,
+           ox:e.clientX - r.left, oy:e.clientY - r.top,
+           baseLeft:base.left, baseTop:base.top };
   });
 
   window.addEventListener('pointermove', function(e){
     if(!st) return;
     if(!st.dragging){
       if(Math.abs(e.clientX-st.sx) < THRESHOLD && Math.abs(e.clientY-st.sy) < THRESHOLD) return;
-      begin(e);
+      st.dragging = true;
+      st.card.style.transition = '';
+      st.card.classList.add('is-dragging');
+      document.body.style.userSelect = 'none';
     }
-    move(e);
+    var cw = grid.clientWidth;
+    var left = e.clientX - st.baseLeft - st.ox;
+    var top  = e.clientY - st.baseTop  - st.oy;
+    left = Math.max(0, Math.min(left, cw - colW));
+    top = Math.max(0, top);
+    st.card.style.left = left + 'px';
+    st.card.style.top  = top + 'px';
+    if(top + rowH + GAP > grid.clientHeight) grid.style.height = (top + rowH + GAP) + 'px';
   });
-
-  function begin(e){
-    var card = st.card, r = card.getBoundingClientRect();
-    st.dragging = true;
-    st.gx = st.sx - r.left;
-    st.gy = st.sy - r.top;
-    var clone = card.cloneNode(true);
-    clone.className = card.className + ' is-clone';
-    clone.style.cssText = 'position:fixed;left:'+r.left+'px;top:'+r.top+'px;width:'+r.width+'px;height:'+r.height+'px;margin:0;pointer-events:none;z-index:1000';
-    document.body.appendChild(clone);
-    st.clone = clone;
-    card.classList.add('is-placeholder');
-    document.body.style.userSelect = 'none';
-  }
-
-  function move(e){
-    st.clone.style.left = (e.clientX - st.gx) + 'px';
-    st.clone.style.top  = (e.clientY - st.gy) + 'px';
-    // 포인터 아래 카드 탐지 (클론은 잠시 숨겨서 제외)
-    st.clone.style.display = 'none';
-    var el = document.elementFromPoint(e.clientX, e.clientY);
-    st.clone.style.display = '';
-    var over = el && el.closest ? el.closest('.card') : null;
-    if(over && over !== st.card && over.parentNode === grid){
-      var r = over.getBoundingClientRect();
-      if(e.clientX < r.left + r.width/2) grid.insertBefore(st.card, over);
-      else grid.insertBefore(st.card, over.nextSibling);
-    }
-  }
 
   function end(){
     if(!st) return;
     var s = st; st = null;
     if(!s.dragging) return;
+    s.card.classList.remove('is-dragging');
+    document.body.style.userSelect = '';
     justDragged = true;
     setTimeout(function(){ justDragged = false; }, 60);
-    document.body.style.userSelect = '';
-    // 최종 그리드 위치로 스냅 애니메이션 후 정리
-    var dest = s.card.getBoundingClientRect(), clone = s.clone, card = s.card;
-    clone.style.transition = 'left .16s ease, top .16s ease, transform .16s ease';
-    clone.style.left = dest.left + 'px';
-    clone.style.top = dest.top + 'px';
-    clone.style.transform = 'scale(1)';
-    var done = function(){
-      if(clone.parentNode) clone.parentNode.removeChild(clone);
-      card.classList.remove('is-placeholder');
-    };
-    clone.addEventListener('transitionend', done, { once:true });
-    setTimeout(done, 240);
-    saveOrder();
+
+    var left = parseFloat(s.card.style.left) || 0, top = parseFloat(s.card.style.top) || 0;
+    var col = Math.max(0, Math.min(COLS-1, Math.round(left/(colW+GAP))));
+    var row = Math.max(0, Math.min(cards.length-1, Math.round(top/(rowH+GAP))));
+    var href = s.card.getAttribute('href'), prev = cells[href];
+    // 목적지 칸이 차 있으면 두 카드의 칸을 맞바꿈
+    var occ = null;
+    for(var k in cells){ if(k!==href && cells[k].col===col && cells[k].row===row){ occ = k; break; } }
+    if(occ) cells[occ] = { col:prev.col, row:prev.row };
+    cells[href] = { col:col, row:row };
+    saveCells();
+    applyAll(true);
   }
   window.addEventListener('pointerup', end);
   window.addEventListener('pointercancel', end);
