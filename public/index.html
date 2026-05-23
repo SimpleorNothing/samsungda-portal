@@ -12,7 +12,7 @@
   header{margin-bottom:44px}
   h1{font-size:30px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
   .sub{color:var(--muted);font-size:15px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
   .card{display:block;text-decoration:none;color:inherit;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:26px 22px;transition:border-color .15s,box-shadow .15s}
   .card:hover{border-color:var(--brand);box-shadow:0 4px 18px rgba(18,87,214,.10)}
   .card h2{font-size:17px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
@@ -81,17 +81,35 @@
   });
 
   var THRESHOLD = 5, st = null, justDragged = false;
+  var HOLD_MS = 320, HOLD_MOVE = 12; // 모바일: 길게 눌러야 위치 조절 시작
 
   grid.addEventListener('pointerdown', function(e){
     if(e.button !== 0) return;
     var card = e.target.closest && e.target.closest('.card');
     if(!card || card.parentNode !== grid) return;
-    st = { card:card, sx:e.clientX, sy:e.clientY, dragging:false, gx:0, gy:0, clone:null };
+    var touch = e.pointerType === 'touch';
+    st = { card:card, sx:e.clientX, sy:e.clientY, dragging:false, gx:0, gy:0, clone:null, touch:touch, armed:!touch, hold:null };
+    if(touch){
+      st.hold = setTimeout(function(){
+        if(!st) return;
+        st.armed = true;
+        begin();
+        move({ clientX:st.sx, clientY:st.sy });
+        if(navigator.vibrate){ try{ navigator.vibrate(15); }catch(_){} }
+      }, HOLD_MS);
+    }
   });
 
   window.addEventListener('pointermove', function(e){
     if(!st) return;
     if(!st.dragging){
+      if(st.touch && !st.armed){
+        // 길게 누르기 전에 움직이면 드래그하지 않고 탭/스크롤로 처리
+        if(Math.abs(e.clientX-st.sx) > HOLD_MOVE || Math.abs(e.clientY-st.sy) > HOLD_MOVE){
+          clearTimeout(st.hold); st = null;
+        }
+        return;
+      }
       if(Math.abs(e.clientX-st.sx) < THRESHOLD && Math.abs(e.clientY-st.sy) < THRESHOLD) return;
       begin(e);
     }
@@ -130,6 +148,7 @@
   function end(){
     if(!st) return;
     var s = st; st = null;
+    if(s.hold) clearTimeout(s.hold);
     if(!s.dragging) return;
     justDragged = true;
     setTimeout(function(){ justDragged = false; }, 60);
