@@ -9,21 +9,26 @@
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:'Pretendard',system-ui,-apple-system,'Segoe UI',Roboto,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:var(--text);background:var(--bg);min-height:100vh;padding:56px 24px}
   .wrap{max-width:860px;margin:0 auto}
-  header{margin-bottom:44px}
+  header{margin-bottom:40px}
   h1{font-size:30px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
   .sub{color:var(--muted);font-size:15px}
+  .section{margin-bottom:40px}
+  .section-head{margin-bottom:16px}
+  .section-head h2{font-size:20px;font-weight:700;letter-spacing:-.3px}
+  .section-head .desc{font-size:13px;color:var(--muted);margin-top:5px}
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
   .card{display:block;text-decoration:none;color:inherit;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:26px 22px;transition:border-color .15s,box-shadow .15s}
   .card:hover{border-color:var(--brand);box-shadow:0 4px 18px rgba(18,87,214,.10)}
-  .card h2{font-size:17px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-  .card h2::after{content:'→';font-size:14px;opacity:.4;margin-left:auto;flex-shrink:0}
+  .card h3{font-size:17px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .card h3::after{content:'→';font-size:14px;opacity:.4;margin-left:auto;flex-shrink:0}
   .card p{font-size:13px;color:var(--muted);line-height:1.65}
   .card{user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
+  .card.is-placeholder{border-style:dashed}
   /* 데스크톱 자유 배치(그리드 칸 스냅) 모드 */
   .grid.is-free{display:block;position:relative}
   .grid.is-free .card{position:absolute;margin:0;cursor:grab}
   .grid.is-free .card.is-dragging{z-index:1000;cursor:grabbing;border-color:var(--brand);box-shadow:0 14px 34px rgba(18,87,214,.22)}
-  .updated{margin-top:44px;padding-top:20px;border-top:1px solid var(--border);text-align:left;color:var(--muted);font-size:13px}
+  .updated{margin-top:8px;padding-top:20px;border-top:1px solid var(--border);text-align:left;color:var(--muted);font-size:13px}
   @media (max-width:600px){.grid{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
@@ -31,183 +36,214 @@
 <div class="wrap">
   <header>
     <h1>기획 도구 모음</h1>
-    <p class="sub">자동화 도구 허브 — 원하는 도구를 선택하세요</p>
+    <p class="sub">자동화 도구와 조사 결과물을 한곳에서 — 원하는 항목을 선택하세요</p>
   </header>
-  <div class="grid">
-    <a class="card" href="/agent-guide">
-      <h2>클로드로 워드보고서 작성하기</h2>
-      <p>Claude AI 에이전트 활용법과 실전 예제를 안내합니다.</p>
-    </a>
-    <a class="card" href="/report">
-      <h2>보고서 자판기</h2>
-      <p>지시문을 입력하면 AI가 보고서를 자동으로 작성합니다.</p>
-    </a>
-    <a class="card" href="/mi">
-      <h2>Market Insight</h2>
-      <p>시장 동향과 인사이트를 분석·정리합니다.</p>
-    </a>
-    <a class="card" href="/2030">
-      <h2>2030 미래 트렌드</h2>
-      <p>2030년 미래 트렌드 전망과 시나리오 분석.</p>
-    </a>
-  </div>
+
+  <section class="section">
+    <div class="section-head">
+      <h2>자동화 도구 모음</h2>
+      <p class="desc">기획 업무를 돕는 자동화 도구입니다.</p>
+    </div>
+    <div class="grid" data-store="tools">
+      <a class="card" href="/agent-guide">
+        <h3>클로드로 워드보고서 작성하기</h3>
+        <p>Claude AI 에이전트 활용법과 실전 예제를 안내합니다.</p>
+      </a>
+      <a class="card" href="/report">
+        <h3>보고서 자판기</h3>
+        <p>지시문을 입력하면 AI가 보고서를 자동으로 작성합니다.</p>
+      </a>
+      <a class="card" href="/mi">
+        <h3>Market Insight</h3>
+        <p>시장 동향과 인사이트를 분석·정리합니다.</p>
+      </a>
+      <a class="card" href="/2030">
+        <h3>2030 미래 트렌드</h3>
+        <p>2030년 미래 트렌드 전망과 시나리오 분석.</p>
+      </a>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-head">
+      <h2>조사 결과물 모음</h2>
+      <p class="desc">시장·경쟁사 조사 결과를 모읍니다. 아래는 예시이며 추후 계속 업데이트됩니다.</p>
+    </div>
+    <div class="grid" data-store="research">
+      <a class="card is-placeholder" href="#" data-key="research-market-2026">
+        <h3>글로벌 가전 시장 동향 2026</h3>
+        <p>주요 시장 규모·성장률과 카테고리별 트렌드를 정리합니다. (예시)</p>
+      </a>
+      <a class="card is-placeholder" href="#" data-key="research-competitor-lineup">
+        <h3>경쟁사 제품 라인업 분석</h3>
+        <p>주요 경쟁사의 신제품과 가격 포지셔닝을 비교합니다. (예시)</p>
+      </a>
+      <a class="card is-placeholder" href="#" data-key="research-consumer-insight">
+        <h3>소비자 인사이트 리포트</h3>
+        <p>타깃 고객의 니즈와 구매 행동을 분석합니다. (예시)</p>
+      </a>
+    </div>
+  </section>
+
   <footer class="updated">최종 업데이트: 2026-05-23 22:13</footer>
 </div>
 <script>
 (function(){
-  var grid = document.querySelector('.grid');
-  if(!grid) return;
-  var cards = Array.prototype.slice.call(grid.querySelectorAll('.card'));
-  if(!cards.length) return;
+  function initGrid(grid){
+    var cards = Array.prototype.slice.call(grid.querySelectorAll('.card'));
+    if(!cards.length) return;
 
-  var COLS = 3, GAP = 14, KEY = 'portal-card-cells';
-  var colW = 0, rowH = 0, cells = {};
+    var COLS = 3, GAP = 14, KEY = 'portal-cells-' + (grid.dataset.store || 'default');
+    var colW = 0, rowH = 0, cells = {}, st = null, justDragged = false, THRESHOLD = 5;
 
-  function isDesktop(){ return window.matchMedia('(min-width:601px)').matches; }
-  function loadCells(){ try{ return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; }catch(e){ return {}; } }
-  function saveCells(){ try{ localStorage.setItem(KEY, JSON.stringify(cells)); }catch(e){} }
+    function keyOf(c){ return c.dataset.key || c.getAttribute('href') || ''; }
+    function isDesktop(){ return window.matchMedia('(min-width:601px)').matches; }
+    function loadCells(){ try{ return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; }catch(e){ return {}; } }
+    function saveCells(){ try{ localStorage.setItem(KEY, JSON.stringify(cells)); }catch(e){} }
 
-  // 셀 좌표 구성: 저장값 우선, 없으면 HTML 순서대로 채움. 중복은 빈 칸으로 보정.
-  function buildCells(){
-    var saved = loadCells();
-    cells = {};
-    cards.forEach(function(c, i){
-      var href = c.getAttribute('href');
-      var s = saved[href];
-      cells[href] = (s && typeof s.col==='number' && typeof s.row==='number')
-        ? { col:s.col, row:s.row } : { col:i%COLS, row:Math.floor(i/COLS) };
-    });
-    var occupied = {};
-    function free(){
-      for(var r=0;r<cards.length;r++) for(var c=0;c<COLS;c++){ if(!occupied[c+','+r]) return {col:c,row:r}; }
-      return {col:0,row:0};
-    }
-    cards.forEach(function(c){
-      var href=c.getAttribute('href'), cell=cells[href], k=cell.col+','+cell.row;
-      if(cell.col<0||cell.col>=COLS||cell.row<0||occupied[k]){ cell=free(); k=cell.col+','+cell.row; }
-      cells[href]=cell; occupied[k]=true;
-    });
-  }
-
-  function measure(){
-    grid.classList.remove('is-free');
-    cards.forEach(function(c){ c.removeAttribute('style'); });
-    grid.style.height = '';
-    var cw = grid.clientWidth;
-    colW = (cw - GAP*(COLS-1)) / COLS;
-    var maxH = 0;
-    cards.forEach(function(c){
-      c.style.cssText = 'position:absolute;width:'+colW+'px;left:-9999px;top:0';
-      if(c.offsetHeight > maxH) maxH = c.offsetHeight;
-    });
-    rowH = Math.ceil(maxH);
-  }
-
-  function cellLeft(col){ return Math.round(col*(colW+GAP)); }
-  function cellTop(row){ return Math.round(row*(rowH+GAP)); }
-
-  function applyAll(animate){
-    var maxRow = 0;
-    cards.forEach(function(c){
-      var cell = cells[c.getAttribute('href')];
-      if(animate){
-        c.style.transition = 'left .16s ease, top .16s ease';
-        c.style.left = cellLeft(cell.col)+'px';
-        c.style.top  = cellTop(cell.row)+'px';
-      }else{
-        c.style.cssText = 'position:absolute;width:'+colW+'px;height:'+rowH+'px;left:'+cellLeft(cell.col)+'px;top:'+cellTop(cell.row)+'px';
+    // 셀 좌표 구성: 저장값 우선, 없으면 HTML 순서대로 채움. 중복은 빈 칸으로 보정.
+    function buildCells(){
+      var saved = loadCells();
+      cells = {};
+      cards.forEach(function(c, i){
+        var k = keyOf(c), s = saved[k];
+        cells[k] = (s && typeof s.col==='number' && typeof s.row==='number')
+          ? { col:s.col, row:s.row } : { col:i%COLS, row:Math.floor(i/COLS) };
+      });
+      var occupied = {};
+      function free(){
+        for(var r=0;r<cards.length;r++) for(var c=0;c<COLS;c++){ if(!occupied[c+','+r]) return {col:c,row:r}; }
+        return {col:0,row:0};
       }
-      if(cell.row > maxRow) maxRow = cell.row;
-    });
-    grid.style.height = ((maxRow+1)*(rowH+GAP) - GAP) + 'px';
-    if(animate) setTimeout(function(){ cards.forEach(function(c){ c.style.transition=''; }); }, 200);
-  }
+      cards.forEach(function(c){
+        var k=keyOf(c), cell=cells[k], pos=cell.col+','+cell.row;
+        if(cell.col<0||cell.col>=COLS||cell.row<0||occupied[pos]){ cell=free(); pos=cell.col+','+cell.row; }
+        cells[k]=cell; occupied[pos]=true;
+      });
+    }
 
-  function layout(){
-    if(st && st.dragging) return;
-    if(!isDesktop()){
+    function measure(){
       grid.classList.remove('is-free');
-      grid.style.height = '';
       cards.forEach(function(c){ c.removeAttribute('style'); });
-      return;
+      grid.style.height = '';
+      var cw = grid.clientWidth;
+      colW = (cw - GAP*(COLS-1)) / COLS;
+      var maxH = 0;
+      cards.forEach(function(c){
+        c.style.cssText = 'position:absolute;width:'+colW+'px;left:-9999px;top:0';
+        if(c.offsetHeight > maxH) maxH = c.offsetHeight;
+      });
+      rowH = Math.ceil(maxH);
     }
-    buildCells();
-    measure();
-    grid.classList.add('is-free');
-    applyAll(false);
+
+    function cellLeft(col){ return Math.round(col*(colW+GAP)); }
+    function cellTop(row){ return Math.round(row*(rowH+GAP)); }
+
+    function applyAll(animate){
+      var maxRow = 0;
+      cards.forEach(function(c){
+        var cell = cells[keyOf(c)];
+        if(animate){
+          c.style.transition = 'left .16s ease, top .16s ease';
+          c.style.left = cellLeft(cell.col)+'px';
+          c.style.top  = cellTop(cell.row)+'px';
+        }else{
+          c.style.cssText = 'position:absolute;width:'+colW+'px;height:'+rowH+'px;left:'+cellLeft(cell.col)+'px;top:'+cellTop(cell.row)+'px';
+        }
+        if(cell.row > maxRow) maxRow = cell.row;
+      });
+      grid.style.height = ((maxRow+1)*(rowH+GAP) - GAP) + 'px';
+      if(animate) setTimeout(function(){ cards.forEach(function(c){ c.style.transition=''; }); }, 200);
+    }
+
+    function layout(){
+      if(st && st.dragging) return;
+      if(!isDesktop()){
+        grid.classList.remove('is-free');
+        grid.style.height = '';
+        cards.forEach(function(c){ c.removeAttribute('style'); });
+        return;
+      }
+      buildCells();
+      measure();
+      grid.classList.add('is-free');
+      applyAll(false);
+    }
+
+    layout();
+    window.addEventListener('load', layout);
+    if(document.fonts && document.fonts.ready){ document.fonts.ready.then(layout); }
+    var rT; window.addEventListener('resize', function(){ clearTimeout(rT); rT = setTimeout(layout, 150); });
+
+    // 기본 링크 드래그 비활성화
+    cards.forEach(function(c){
+      c.setAttribute('draggable','false');
+      c.addEventListener('dragstart', function(e){ e.preventDefault(); });
+    });
+
+    grid.addEventListener('pointerdown', function(e){
+      if(!isDesktop()) return;                       // 모바일: 위치 이동 없음
+      if(e.pointerType !== 'mouse' || e.button !== 0) return; // 마우스에서만
+      var card = e.target.closest && e.target.closest('.card');
+      if(!card || card.parentNode !== grid) return;
+      var r = card.getBoundingClientRect(), base = grid.getBoundingClientRect();
+      st = { card:card, dragging:false, sx:e.clientX, sy:e.clientY,
+             ox:e.clientX - r.left, oy:e.clientY - r.top,
+             baseLeft:base.left, baseTop:base.top };
+    });
+
+    window.addEventListener('pointermove', function(e){
+      if(!st) return;
+      if(!st.dragging){
+        if(Math.abs(e.clientX-st.sx) < THRESHOLD && Math.abs(e.clientY-st.sy) < THRESHOLD) return;
+        st.dragging = true;
+        st.card.style.transition = '';
+        st.card.classList.add('is-dragging');
+        document.body.style.userSelect = 'none';
+      }
+      var cw = grid.clientWidth;
+      var left = e.clientX - st.baseLeft - st.ox;
+      var top  = e.clientY - st.baseTop  - st.oy;
+      left = Math.max(0, Math.min(left, cw - colW));
+      top = Math.max(0, top);
+      st.card.style.left = left + 'px';
+      st.card.style.top  = top + 'px';
+      if(top + rowH + GAP > grid.clientHeight) grid.style.height = (top + rowH + GAP) + 'px';
+    });
+
+    function end(){
+      if(!st) return;
+      var s = st; st = null;
+      if(!s.dragging) return;
+      s.card.classList.remove('is-dragging');
+      document.body.style.userSelect = '';
+      justDragged = true;
+      setTimeout(function(){ justDragged = false; }, 60);
+
+      var left = parseFloat(s.card.style.left) || 0, top = parseFloat(s.card.style.top) || 0;
+      var col = Math.max(0, Math.min(COLS-1, Math.round(left/(colW+GAP))));
+      var row = Math.max(0, Math.min(cards.length-1, Math.round(top/(rowH+GAP))));
+      var k = keyOf(s.card), prev = cells[k];
+      // 목적지 칸이 차 있으면 두 카드의 칸을 맞바꿈
+      var occ = null;
+      for(var kk in cells){ if(kk!==k && cells[kk].col===col && cells[kk].row===row){ occ = kk; break; } }
+      if(occ) cells[occ] = { col:prev.col, row:prev.row };
+      cells[k] = { col:col, row:row };
+      saveCells();
+      applyAll(true);
+    }
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+
+    // 드래그 직후의 클릭(네비게이션) 차단 + 예시(placeholder) 카드 이동 방지
+    grid.addEventListener('click', function(e){
+      if(justDragged){ e.preventDefault(); e.stopPropagation(); return; }
+      var card = e.target.closest && e.target.closest('.card');
+      if(card && card.getAttribute('href') === '#') e.preventDefault();
+    }, true);
   }
 
-  layout();
-  window.addEventListener('load', layout);
-  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(layout); }
-  var rT; window.addEventListener('resize', function(){ clearTimeout(rT); rT = setTimeout(layout, 150); });
-
-  // 기본 링크 드래그 비활성화
-  cards.forEach(function(c){
-    c.setAttribute('draggable','false');
-    c.addEventListener('dragstart', function(e){ e.preventDefault(); });
-  });
-
-  var THRESHOLD = 5, st = null, justDragged = false;
-
-  grid.addEventListener('pointerdown', function(e){
-    if(!isDesktop()) return;                       // 모바일: 위치 이동 없음
-    if(e.pointerType !== 'mouse' || e.button !== 0) return; // 마우스에서만
-    var card = e.target.closest && e.target.closest('.card');
-    if(!card || card.parentNode !== grid) return;
-    var r = card.getBoundingClientRect(), base = grid.getBoundingClientRect();
-    st = { card:card, dragging:false, sx:e.clientX, sy:e.clientY,
-           ox:e.clientX - r.left, oy:e.clientY - r.top,
-           baseLeft:base.left, baseTop:base.top };
-  });
-
-  window.addEventListener('pointermove', function(e){
-    if(!st) return;
-    if(!st.dragging){
-      if(Math.abs(e.clientX-st.sx) < THRESHOLD && Math.abs(e.clientY-st.sy) < THRESHOLD) return;
-      st.dragging = true;
-      st.card.style.transition = '';
-      st.card.classList.add('is-dragging');
-      document.body.style.userSelect = 'none';
-    }
-    var cw = grid.clientWidth;
-    var left = e.clientX - st.baseLeft - st.ox;
-    var top  = e.clientY - st.baseTop  - st.oy;
-    left = Math.max(0, Math.min(left, cw - colW));
-    top = Math.max(0, top);
-    st.card.style.left = left + 'px';
-    st.card.style.top  = top + 'px';
-    if(top + rowH + GAP > grid.clientHeight) grid.style.height = (top + rowH + GAP) + 'px';
-  });
-
-  function end(){
-    if(!st) return;
-    var s = st; st = null;
-    if(!s.dragging) return;
-    s.card.classList.remove('is-dragging');
-    document.body.style.userSelect = '';
-    justDragged = true;
-    setTimeout(function(){ justDragged = false; }, 60);
-
-    var left = parseFloat(s.card.style.left) || 0, top = parseFloat(s.card.style.top) || 0;
-    var col = Math.max(0, Math.min(COLS-1, Math.round(left/(colW+GAP))));
-    var row = Math.max(0, Math.min(cards.length-1, Math.round(top/(rowH+GAP))));
-    var href = s.card.getAttribute('href'), prev = cells[href];
-    // 목적지 칸이 차 있으면 두 카드의 칸을 맞바꿈
-    var occ = null;
-    for(var k in cells){ if(k!==href && cells[k].col===col && cells[k].row===row){ occ = k; break; } }
-    if(occ) cells[occ] = { col:prev.col, row:prev.row };
-    cells[href] = { col:col, row:row };
-    saveCells();
-    applyAll(true);
-  }
-  window.addEventListener('pointerup', end);
-  window.addEventListener('pointercancel', end);
-
-  // 드래그 직후의 클릭(네비게이션) 차단
-  grid.addEventListener('click', function(e){
-    if(justDragged){ e.preventDefault(); e.stopPropagation(); }
-  }, true);
+  Array.prototype.forEach.call(document.querySelectorAll('.grid'), initGrid);
 })();
 </script>
 </body>
