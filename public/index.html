@@ -18,13 +18,13 @@
   .card h2{font-size:17px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
   .card h2::after{content:'→';font-size:14px;opacity:.4;margin-left:auto;flex-shrink:0}
   .card p{font-size:13px;color:var(--muted);line-height:1.65}
-  .card{cursor:grab;user-select:none;-webkit-user-select:none;-webkit-user-drag:none;touch-action:none}
-  .card:active{cursor:grabbing}
-  .grid.is-free{display:block;position:relative}
-  .grid.is-free .card{position:absolute;margin:0}
-  .card.is-dragging{z-index:1000;border-color:var(--brand);box-shadow:0 14px 34px rgba(18,87,214,.22);transform:scale(1.03);cursor:grabbing}
+  .card{user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
+  .card.is-placeholder{opacity:.3;border-style:dashed;box-shadow:none}
+  .card.is-clone{cursor:grabbing;background:var(--bg);border-color:var(--brand);box-shadow:0 12px 30px rgba(18,87,214,.20);transform:scale(1.02)}
   .updated{margin-top:44px;padding-top:20px;border-top:1px solid var(--border);text-align:left;color:var(--muted);font-size:13px}
   @media (max-width:600px){.grid{grid-template-columns:repeat(2,1fr)}}
+  /* 마우스(데스크톱)에서만 끌어서 위치 변경 가능 */
+  @media (hover:hover) and (pointer:fine){.card{cursor:grab}.card:active{cursor:grabbing}}
 </style>
 </head>
 <body>
@@ -57,47 +57,24 @@
 (function(){
   var grid = document.querySelector('.grid');
   if(!grid) return;
+  var KEY = 'portal-card-order';
   var cards = Array.prototype.slice.call(grid.querySelectorAll('.card'));
-  if(!cards.length) return;
 
-  // 위치 저장 키: 화면 크기(데스크톱/모바일)별로 따로 보관
-  function bucket(){ return window.matchMedia('(max-width:600px)').matches ? 'm' : 'd'; }
-  function posKey(){ return 'portal-card-pos-' + bucket(); }
-  function loadPos(){ try{ return JSON.parse(localStorage.getItem(posKey()) || '{}') || {}; }catch(e){ return {}; } }
-  function savePos(map){ try{ localStorage.setItem(posKey(), JSON.stringify(map)); }catch(e){} }
+  // 저장된 순서 복원
+  try{
+    var saved = JSON.parse(localStorage.getItem(KEY) || '[]');
+    if(Array.isArray(saved)){
+      var map = {};
+      cards.forEach(function(c){ map[c.getAttribute('href')] = c; });
+      saved.forEach(function(id){ if(map[id]) grid.appendChild(map[id]); });
+    }
+  }catch(e){}
 
-  // 기본(그리드) 배치를 측정해 절대 위치로 전환. 저장된 위치가 있으면 그 값을 사용.
-  function layout(){
-    if(st && st.dragging) return;
-    grid.style.height = '';
-    grid.classList.remove('is-free');
-    cards.forEach(function(c){ c.style.left=''; c.style.top=''; c.style.width=''; c.style.height=''; });
-    var base = grid.getBoundingClientRect();
-    var rects = cards.map(function(c){
-      var r = c.getBoundingClientRect();
-      return { left:r.left-base.left, top:r.top-base.top, w:r.width, h:r.height };
-    });
-    grid.classList.add('is-free');
-    var cw = grid.clientWidth, saved = loadPos(), maxBottom = 0;
-    cards.forEach(function(c, i){
-      var d = rects[i], s = saved[c.getAttribute('href')];
-      var left = s ? s.xPct * cw : d.left;
-      var top  = s ? s.y : d.top;
-      left = Math.max(0, Math.min(left, cw - d.w));
-      top = Math.max(0, top);
-      c.style.width = d.w + 'px';
-      c.style.height = d.h + 'px';
-      c.style.left = left + 'px';
-      c.style.top = top + 'px';
-      maxBottom = Math.max(maxBottom, top + d.h);
-    });
-    grid.style.height = (maxBottom + 4) + 'px';
+  function saveOrder(){
+    var ids = Array.prototype.slice.call(grid.querySelectorAll('.card'))
+      .map(function(c){ return c.getAttribute('href'); });
+    try{ localStorage.setItem(KEY, JSON.stringify(ids)); }catch(e){}
   }
-
-  layout();
-  window.addEventListener('load', layout);
-  if(document.fonts && document.fonts.ready){ document.fonts.ready.then(layout); }
-  var rT; window.addEventListener('resize', function(){ clearTimeout(rT); rT = setTimeout(layout, 150); });
 
   // 기본 링크 드래그 비활성화
   cards.forEach(function(c){
@@ -105,77 +82,73 @@
     c.addEventListener('dragstart', function(e){ e.preventDefault(); });
   });
 
-  var THRESHOLD = 5, HOLD_MS = 320, HOLD_MOVE = 12; // 모바일: 길게 눌러야 이동 시작
-  var st = null, justDragged = false;
+  var THRESHOLD = 5, st = null, justDragged = false;
 
   grid.addEventListener('pointerdown', function(e){
-    if(e.button !== 0) return;
+    if(e.pointerType !== 'mouse' || e.button !== 0) return; // 마우스에서만 위치 변경
     var card = e.target.closest && e.target.closest('.card');
     if(!card || card.parentNode !== grid) return;
-    var r = card.getBoundingClientRect(), base = grid.getBoundingClientRect();
-    var touch = e.pointerType === 'touch';
-    st = {
-      card:card, touch:touch, armed:!touch, hold:null, dragging:false,
-      sx:e.clientX, sy:e.clientY,
-      ox:e.clientX - r.left, oy:e.clientY - r.top,
-      baseLeft:base.left, baseTop:base.top
-    };
-    if(touch){
-      st.hold = setTimeout(function(){
-        if(!st) return;
-        st.armed = true; begin();
-        if(navigator.vibrate){ try{ navigator.vibrate(15); }catch(_){} }
-      }, HOLD_MS);
-    }
+    st = { card:card, sx:e.clientX, sy:e.clientY, dragging:false, gx:0, gy:0, clone:null };
   });
-
-  function begin(){
-    st.dragging = true;
-    st.card.classList.add('is-dragging');
-    document.body.style.userSelect = 'none';
-  }
 
   window.addEventListener('pointermove', function(e){
     if(!st) return;
     if(!st.dragging){
-      if(st.touch && !st.armed){
-        // 길게 누르기 전에 움직이면 이동하지 않음(탭으로 처리)
-        if(Math.abs(e.clientX-st.sx) > HOLD_MOVE || Math.abs(e.clientY-st.sy) > HOLD_MOVE){
-          clearTimeout(st.hold); st = null;
-        }
-        return;
-      }
       if(Math.abs(e.clientX-st.sx) < THRESHOLD && Math.abs(e.clientY-st.sy) < THRESHOLD) return;
-      begin();
+      begin(e);
     }
-    var cw = grid.clientWidth, w = st.card.offsetWidth, h = st.card.offsetHeight;
-    var left = e.clientX - st.baseLeft - st.ox;
-    var top  = e.clientY - st.baseTop  - st.oy;
-    left = Math.max(0, Math.min(left, cw - w));
-    top = Math.max(0, top);
-    st.card.style.left = left + 'px';
-    st.card.style.top = top + 'px';
-    if(top + h + 4 > grid.clientHeight) grid.style.height = (top + h + 4) + 'px';
+    move(e);
   });
+
+  function begin(e){
+    var card = st.card, r = card.getBoundingClientRect();
+    st.dragging = true;
+    st.gx = st.sx - r.left;
+    st.gy = st.sy - r.top;
+    var clone = card.cloneNode(true);
+    clone.className = card.className + ' is-clone';
+    clone.style.cssText = 'position:fixed;left:'+r.left+'px;top:'+r.top+'px;width:'+r.width+'px;height:'+r.height+'px;margin:0;pointer-events:none;z-index:1000';
+    document.body.appendChild(clone);
+    st.clone = clone;
+    card.classList.add('is-placeholder');
+    document.body.style.userSelect = 'none';
+  }
+
+  function move(e){
+    st.clone.style.left = (e.clientX - st.gx) + 'px';
+    st.clone.style.top  = (e.clientY - st.gy) + 'px';
+    // 포인터 아래 카드 탐지 (클론은 잠시 숨겨서 제외)
+    st.clone.style.display = 'none';
+    var el = document.elementFromPoint(e.clientX, e.clientY);
+    st.clone.style.display = '';
+    var over = el && el.closest ? el.closest('.card') : null;
+    if(over && over !== st.card && over.parentNode === grid){
+      var r = over.getBoundingClientRect();
+      if(e.clientX < r.left + r.width/2) grid.insertBefore(st.card, over);
+      else grid.insertBefore(st.card, over.nextSibling);
+    }
+  }
 
   function end(){
     if(!st) return;
     var s = st; st = null;
-    if(s.hold) clearTimeout(s.hold);
     if(!s.dragging) return;
-    s.card.classList.remove('is-dragging');
-    document.body.style.userSelect = '';
     justDragged = true;
     setTimeout(function(){ justDragged = false; }, 60);
-    var cw = grid.clientWidth, map = loadPos();
-    map[s.card.getAttribute('href')] = {
-      xPct: (parseFloat(s.card.style.left) || 0) / cw,
-      y: parseFloat(s.card.style.top) || 0
+    document.body.style.userSelect = '';
+    // 최종 그리드 위치로 스냅 애니메이션 후 정리
+    var dest = s.card.getBoundingClientRect(), clone = s.clone, card = s.card;
+    clone.style.transition = 'left .16s ease, top .16s ease, transform .16s ease';
+    clone.style.left = dest.left + 'px';
+    clone.style.top = dest.top + 'px';
+    clone.style.transform = 'scale(1)';
+    var done = function(){
+      if(clone.parentNode) clone.parentNode.removeChild(clone);
+      card.classList.remove('is-placeholder');
     };
-    savePos(map);
-    var maxBottom = 0;
-    cards.forEach(function(c){ maxBottom = Math.max(maxBottom, c.offsetTop + c.offsetHeight); });
-    grid.style.height = (maxBottom + 4) + 'px';
+    clone.addEventListener('transitionend', done, { once:true });
+    setTimeout(done, 240);
+    saveOrder();
   }
   window.addEventListener('pointerup', end);
   window.addEventListener('pointercancel', end);
