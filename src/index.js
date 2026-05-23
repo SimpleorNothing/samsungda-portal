@@ -25,13 +25,23 @@ export default {
 };
 
 async function proxyTo(request, upstream, path, search) {
-  const target = upstream.replace(/\/$/, "") + path + (search || "");
+  // 스킴이 없으면 https:// 보정 (대시보드에 host만 넣은 경우 방지)
+  const base = (/^https?:\/\//i.test(upstream) ? upstream : "https://" + upstream).replace(/\/$/, "");
+  const target = base + path + (search || "");
   const headers = new Headers(request.headers);
   headers.delete("host");
-  return fetch(target, {
-    method: request.method,
-    headers,
-    redirect: "follow",
-    body: ["GET","HEAD"].includes(request.method) ? null : request.body,
-  });
+  try {
+    return await fetch(target, {
+      method: request.method,
+      headers,
+      redirect: "follow",
+      body: ["GET","HEAD"].includes(request.method) ? null : request.body,
+    });
+  } catch (err) {
+    // 1101로 죽는 대신 원인을 노출
+    return new Response(`Upstream fetch failed\ntarget: ${target}\nerror: ${err}`, {
+      status: 502,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
+  }
 }
