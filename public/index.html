@@ -69,7 +69,24 @@
   .grid.is-free .card{position:absolute;margin:0;cursor:grab}
   .grid.is-free .card.is-dragging{z-index:1000;cursor:grabbing;border-color:var(--brand);box-shadow:0 14px 34px rgba(18,87,214,.22)}
   .updated{margin-top:8px;padding-top:20px;border-top:1px solid var(--border);text-align:left;color:var(--muted);font-size:13px}
-  @media (max-width:600px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media (max-width:600px){
+    .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    /* 모바일: 표를 카드형으로 쌓아 파일명을 전체 폭으로 표시 */
+    .filelist-wrap{overflow-x:visible}
+    .filelist-table thead{display:none}
+    .filelist-table tbody,.filelist-table tr,.filelist-table td{display:block}
+    .filelist-table tr{position:relative;padding:12px 0 12px 32px;border-bottom:1px solid var(--border)}
+    .filelist-table tr:hover td{background:none}
+    .filelist-table td{padding:0;border:none}
+    .filelist-table .col-check{position:absolute;left:0;top:13px;width:auto;text-align:left}
+    .filelist-table .col-name{margin-bottom:5px}
+    .filelist-table .fname{display:block;font-size:14px;overflow-wrap:anywhere}
+    .filelist-table .col-size,.filelist-table .col-date{display:inline-block;font-size:12px}
+    .filelist-table .col-size{margin-right:12px}
+    .filelist-table .col-act{margin-top:8px;text-align:left}
+    .filelist-table .fdl{margin-right:14px}
+    .filelist-empty{padding:24px 0}
+  }
 </style>
 </head>
 <body>
