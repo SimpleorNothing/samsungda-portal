@@ -7,11 +7,6 @@ function json(data, status = 200) {
   });
 }
 
-function authorized(request, env) {
-  const token = request.headers.get("x-upload-token") || "";
-  return !!env.UPLOAD_TOKEN && token === env.UPLOAD_TOKEN;
-}
-
 function bytesToHex(bytes) {
   return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
@@ -165,8 +160,7 @@ async function handleResearchApi(request, env, id) {
       return json(items);
     }
     if (request.method === "POST") {
-      if (!env.UPLOAD_TOKEN) return json({ error: "uploads not configured" }, 503);
-      if (!authorized(request, env)) return json({ error: "unauthorized" }, 401);
+      // 업로드 권한은 사이트 비밀번호 게이트로 보호됨 — 별도의 공용 업로드 토큰은 불필요.
       let form;
       try {
         form = await request.formData();
