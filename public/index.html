@@ -50,6 +50,16 @@
   .filelist .fdel{font:inherit;font-size:13px;color:var(--muted);background:transparent;border:none;cursor:pointer;padding:4px 8px;border-radius:7px;transition:background .12s,color .12s}
   .filelist .fdel:hover{background:#ffe1e1;color:#c0392b}
   .filelist-empty{padding:30px 12px;text-align:center;color:var(--muted);font-size:14px}
+  .filelist-table .col-check{width:34px;text-align:center;padding-left:0;padding-right:0}
+  .filelist-table .col-check input{width:16px;height:16px;cursor:pointer;accent-color:var(--brand);margin:0;vertical-align:middle}
+  .filelist-table tr.is-selected td{background:rgba(18,87,214,.06)}
+  .filelist-bulk{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:10px 12px;background:var(--surface);border:1.5px solid var(--border);border-radius:10px;font-size:13px}
+  .filelist-bulk .bulk-count{color:var(--text);font-weight:600}
+  .filelist-bulk .bulk-count b{color:var(--brand)}
+  .filelist-bulk .bulk-btn{margin-left:0;font:inherit;font-size:13px;font-weight:600;color:var(--brand);background:#fff;border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;transition:border-color .12s,background .12s,color .12s}
+  .filelist-bulk .bulk-btn:hover{border-color:var(--brand)}
+  .filelist-bulk .bulk-del{color:#c0392b}
+  .filelist-bulk .bulk-del:hover{border-color:#c0392b;background:#ffe1e1}
   .dropzone{margin-top:14px;border:1.5px dashed var(--border);border-radius:14px;padding:22px;text-align:center;color:var(--muted);font-size:14px;cursor:pointer;transition:border-color .15s,background .15s,color .15s}
   .dropzone:hover{border-color:var(--brand)}
   .dropzone.is-over{border-color:var(--brand);background:rgba(18,87,214,.06);color:var(--brand)}
@@ -109,9 +119,14 @@
         <span class="filelist-count">파일 목록 <b id="research-count">0</b>개</span>
         <input type="search" id="research-search" class="filelist-search" placeholder="파일 이름 검색…">
       </div>
+      <div class="filelist-bulk" id="research-bulk" hidden>
+        <span class="bulk-count"><b id="research-selcount">0</b>개 선택됨</span>
+        <button type="button" class="bulk-btn" id="research-dl-sel">선택 다운로드</button>
+        <button type="button" class="bulk-btn bulk-del" id="research-del-sel">선택 삭제</button>
+      </div>
       <div class="filelist-wrap">
         <table class="filelist-table">
-          <thead><tr><th class="col-name sortable" data-sort="name">이름</th><th class="col-size sortable" data-sort="size">크기</th><th class="col-date sortable" data-sort="date">업로드</th><th class="col-act"></th></tr></thead>
+          <thead><tr><th class="col-check"><input type="checkbox" id="research-checkall" aria-label="전체 선택"></th><th class="col-name sortable" data-sort="name">이름</th><th class="col-size sortable" data-sort="size">크기</th><th class="col-date sortable" data-sort="date">업로드</th><th class="col-act"></th></tr></thead>
           <tbody id="research-tbody"></tbody>
         </table>
       </div>
@@ -288,9 +303,16 @@
     var tbody = document.getElementById('research-tbody');
     var count = document.getElementById('research-count');
     var search = document.getElementById('research-search');
+    var checkAll = document.getElementById('research-checkall');
+    var bulk = document.getElementById('research-bulk');
+    var selCount = document.getElementById('research-selcount');
+    var dlSelBtn = document.getElementById('research-dl-sel');
+    var delSelBtn = document.getElementById('research-del-sel');
     if(!tbody || !dz || !input || !section) return;
 
     var allItems = [];
+    var selected = {};
+    var visibleIds = [];
     var sortKey = 'date', sortDir = 'desc';
     var headers = section.querySelectorAll('.filelist-table th.sortable');
 
@@ -330,12 +352,16 @@
         return va < vb ? -dir : va > vb ? dir : 0;
       });
       if(count) count.textContent = list.length;
+      visibleIds = list.map(function(it){ return it.id; });
       if(!list.length){
-        tbody.innerHTML = '<tr><td class="filelist-empty" colspan="4">'+(allItems.length ? '검색 결과가 없습니다.' : '아직 업로드된 결과물이 없습니다.')+'</td></tr>';
+        tbody.innerHTML = '<tr><td class="filelist-empty" colspan="5">'+(allItems.length ? '검색 결과가 없습니다.' : '아직 업로드된 결과물이 없습니다.')+'</td></tr>';
+        updateBulk();
         return;
       }
       tbody.innerHTML = list.map(function(it){
-        return '<tr>'
+        var sel = !!selected[it.id];
+        return '<tr'+(sel ? ' class="is-selected"' : '')+'>'
+          + '<td class="col-check"><input type="checkbox" class="fchk" data-id="'+esc(it.id)+'"'+(sel ? ' checked' : '')+' aria-label="선택"></td>'
           + '<td class="col-name"><span class="fname">'+esc(it.name)+'</span></td>'
           + '<td class="col-size">'+fmtSize(it.size)+'</td>'
           + '<td class="col-date">'+fmtDate(it.uploaded)+'</td>'
@@ -343,6 +369,23 @@
           + '<button class="fdel" data-id="'+esc(it.id)+'" title="삭제" aria-label="삭제">삭제</button></td>'
           + '</tr>';
       }).join('');
+      updateBulk();
+    }
+
+    function selectedVisible(){ return visibleIds.filter(function(id){ return selected[id]; }); }
+
+    function updateBulk(){
+      // 더 이상 목록에 없는 선택 항목 정리
+      var existing = {};
+      allItems.forEach(function(it){ existing[it.id] = true; });
+      Object.keys(selected).forEach(function(id){ if(!existing[id]) delete selected[id]; });
+      var sel = selectedVisible(), n = sel.length;
+      if(selCount) selCount.textContent = n;
+      if(bulk) bulk.hidden = n === 0;
+      if(checkAll){
+        checkAll.checked = visibleIds.length > 0 && n === visibleIds.length;
+        checkAll.indeterminate = n > 0 && n < visibleIds.length;
+      }
     }
 
     if(search) search.addEventListener('input', applyFilter);
@@ -432,7 +475,78 @@
     section.addEventListener('dragleave', function(e){ if(e.target === section) dz.classList.remove('is-over'); });
     section.addEventListener('drop', function(e){ if(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length){ e.preventDefault(); dz.classList.remove('is-over'); upload(e.dataTransfer.files); } });
 
-    // 삭제(이벤트 위임) — 그 파일에 설정된 비밀번호를 입력해야 삭제됨
+    function deleteOne(id, pw){
+      return fetch('/api/research/'+encodeURIComponent(id), { method:'DELETE', headers:{ 'x-file-password': pw } })
+        .then(function(r){
+          if(r.status === 401 || r.status === 403) return { ok:false, auth:true };
+          if(!r.ok && r.status !== 204) return { ok:false, status:r.status };
+          return { ok:true };
+        })
+        .catch(function(e){ return { ok:false, err:(e && e.message) || '네트워크 오류' }; });
+    }
+
+    // 선택 토글(체크박스)
+    tbody.addEventListener('change', function(e){
+      var chk = e.target.closest && e.target.closest('.fchk');
+      if(!chk) return;
+      var id = chk.getAttribute('data-id');
+      if(chk.checked) selected[id] = true; else delete selected[id];
+      var tr = chk.closest('tr');
+      if(tr) tr.classList.toggle('is-selected', chk.checked);
+      updateBulk();
+    });
+
+    if(checkAll){
+      checkAll.addEventListener('change', function(){
+        var on = checkAll.checked;
+        visibleIds.forEach(function(id){ if(on) selected[id] = true; else delete selected[id]; });
+        applyFilter();
+      });
+    }
+
+    // 선택 다운로드 — 선택한 파일을 각각 내려받음
+    if(dlSelBtn) dlSelBtn.addEventListener('click', function(){
+      var byId = {};
+      allItems.forEach(function(it){ byId[it.id] = it; });
+      selectedVisible().forEach(function(id, i){
+        var it = byId[id];
+        var a = document.createElement('a');
+        a.href = '/research/' + encodeURIComponent(id);
+        a.download = (it && it.name) || '';
+        a.rel = 'noopener';
+        document.body.appendChild(a);
+        setTimeout(function(){ a.click(); a.remove(); }, i * 250);
+      });
+    });
+
+    // 선택 삭제 — 비밀번호를 한 번 입력해 선택 파일 전체에 적용
+    if(delSelBtn) delSelBtn.addEventListener('click', function(){
+      var ids = selectedVisible();
+      if(!ids.length) return;
+      var pw = window.prompt(ids.length + '개 파일을 삭제합니다.\n비밀번호를 입력하세요 (선택한 모든 파일에 동일 적용)');
+      if(!pw) return;
+      status.style.color = '';
+      status.textContent = '삭제 중… (0/' + ids.length + ')';
+      var done = 0, failed = 0, authFail = false, i = 0;
+      function next(){
+        if(i >= ids.length){
+          status.style.color = failed ? '#c0392b' : '';
+          var msg = '삭제 완료: ' + done + '개' + (failed ? (' · 실패 ' + failed + '개' + (authFail ? ' (비밀번호 불일치 포함)' : '')) : '');
+          status.textContent = msg;
+          load();
+          return;
+        }
+        deleteOne(ids[i], pw).then(function(res){
+          if(res.ok){ done++; delete selected[ids[i]]; } else { failed++; if(res.auth) authFail = true; }
+          i++;
+          status.textContent = '삭제 중… (' + (done + failed) + '/' + ids.length + ')';
+          next();
+        });
+      }
+      next();
+    });
+
+    // 개별 삭제(이벤트 위임) — 그 파일에 설정된 비밀번호를 입력해야 삭제됨
     tbody.addEventListener('click', function(e){
       var btn = e.target.closest && e.target.closest('.fdel');
       if(!btn) return;
@@ -441,14 +555,13 @@
       var pw = window.prompt('이 파일의 비밀번호를 입력하세요\n(올린 사람이 업로드 시 설정한 비밀번호)');
       if(!pw) return;
       status.style.color = '';
-      fetch('/api/research/'+encodeURIComponent(id), { method:'DELETE', headers:{ 'x-file-password': pw } })
-        .then(function(r){
-          if(r.status === 401 || r.status === 403){ status.style.color = '#c0392b'; status.textContent = '삭제 실패: 비밀번호가 올바르지 않습니다.'; return; }
-          if(!r.ok && r.status !== 204){ status.style.color = '#c0392b'; status.textContent = '삭제 오류: HTTP '+r.status; return; }
-          status.textContent = '삭제되었습니다.';
-          load();
-        })
-        .catch(function(e){ status.style.color = '#c0392b'; status.textContent = '삭제 오류: '+(e && e.message); });
+      deleteOne(id, pw).then(function(res){
+        if(res.ok){ status.textContent = '삭제되었습니다.'; load(); return; }
+        status.style.color = '#c0392b';
+        if(res.auth) status.textContent = '삭제 실패: 비밀번호가 올바르지 않습니다.';
+        else if(res.status) status.textContent = '삭제 오류: HTTP ' + res.status;
+        else status.textContent = '삭제 오류: ' + (res.err || '');
+      });
     });
 
     load();
