@@ -1,3 +1,6 @@
 # Local dev secrets for `wrangler dev` (copy to .dev.vars, which is gitignored).
 # Password required to upload/delete research files via /api/research.
 UPLOAD_TOKEN=change-me
+# Site access password. When set, every page asks for this password once and
+# then remembers the visitor via a long-lived cookie. Leave unset to disable.
+SITE_PASSWORD=change-me
