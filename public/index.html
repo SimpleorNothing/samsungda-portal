@@ -16,7 +16,7 @@
   .section-head{margin-bottom:16px}
   .section-head h2{font-size:20px;font-weight:700;letter-spacing:-.3px}
   .section-head .desc{font-size:13px;color:var(--muted);margin-top:5px}
-  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
   .card{display:block;text-decoration:none;color:inherit;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:26px 22px;transition:border-color .15s,box-shadow .15s}
   .card:hover{border-color:var(--brand);box-shadow:0 4px 18px rgba(18,87,214,.10)}
   .card h3{font-size:17px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
@@ -24,8 +24,11 @@
   .card p{font-size:13px;color:var(--muted);line-height:1.65}
   .card{user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
   /* 조사 결과물 카드(동적) */
-  .research-card{position:relative}
+  .research-card{position:relative;min-width:0}
   .research-card h3::after{content:none}
+  .research-card h3{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;line-height:1.35;min-height:2.7em}
+  .research-card .rfile{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .research-card .rdate{color:var(--muted);margin-top:2px}
   .research-card .stretch{position:absolute;inset:0;z-index:1;border-radius:14px}
   .research-card .research-del{position:absolute;top:10px;right:10px;z-index:2;width:24px;height:24px;padding:0;border:none;border-radius:7px;background:#eef1f5;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;opacity:0;transition:opacity .12s,background .12s,color .12s}
   .research-card:hover .research-del{opacity:1}
@@ -39,7 +42,7 @@
   .grid.is-free .card{position:absolute;margin:0;cursor:grab}
   .grid.is-free .card.is-dragging{z-index:1000;cursor:grabbing;border-color:var(--brand);box-shadow:0 14px 34px rgba(18,87,214,.22)}
   .updated{margin-top:8px;padding-top:20px;border-top:1px solid var(--border);text-align:left;color:var(--muted);font-size:13px}
-  @media (max-width:600px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media (max-width:600px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 </style>
 </head>
 <body>
@@ -259,17 +262,16 @@
     var TOKKEY = 'research-upload-token';
 
     function esc(s){ return String(s).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
-    function fmtSize(n){ if(!n && n!==0) return ''; var u=['B','KB','MB','GB']; var i=0; while(n>=1024 && i<u.length-1){ n/=1024; i++; } return (i?n.toFixed(1):n)+' '+u[i]; }
     function fmtDate(s){ var d=new Date(s); return isNaN(d)?'':d.toISOString().slice(0,10); }
 
     function render(items){
       if(!Array.isArray(items) || !items.length){ grid.innerHTML=''; grid.style.display='none'; return; }
       grid.style.display='';
       grid.innerHTML = items.map(function(it){
-        var meta = [esc(it.name), fmtSize(it.size), fmtDate(it.uploaded)].filter(Boolean).join(' · ');
         return '<div class="card research-card">'
           + '<h3>'+esc(it.title)+'</h3>'
-          + '<p>'+meta+'</p>'
+          + '<p class="rfile">'+esc(it.name)+'</p>'
+          + '<p class="rdate">'+fmtDate(it.uploaded)+'</p>'
           + '<a class="stretch" href="/research/'+encodeURIComponent(it.id)+'" target="_blank" rel="noopener" aria-label="'+esc(it.title)+' 열기"></a>'
           + '<button class="research-del" data-id="'+esc(it.id)+'" title="삭제" aria-label="삭제">×</button>'
           + '</div>';
@@ -291,25 +293,44 @@
       if(!files.length) return;
       var token = getToken();
       if(!token){ status.textContent = '업로드 취소됨 (비밀번호 필요).'; return; }
-      var done = 0, failed = 0;
+      var done = 0, failed = 0, lastErr = '';
+      status.style.color = '';
       status.textContent = '업로드 중… (0/'+files.length+')';
+      function fail(code, detail){
+        failed++;
+        if(code === 401){ localStorage.removeItem(TOKKEY); lastErr = '비밀번호 오류(401) — 다시 시도하면 새로 입력합니다.'; }
+        else if(code === 503){ lastErr = '서버 미설정(503): ' + (detail || 'R2 버킷/UPLOAD_TOKEN 확인 필요'); }
+        else if(code){ lastErr = 'HTTP ' + code + (detail ? (' · ' + detail) : ''); }
+        else { lastErr = detail || '네트워크 오류'; }
+      }
+      function finish(){
+        var msg = '완료: '+done+'개' + (failed ? (' · 실패 '+failed+'개') : '');
+        if(failed && lastErr) msg += ' — ' + lastErr;
+        status.style.color = failed ? '#c0392b' : '';
+        status.textContent = msg;
+        load();
+      }
       function next(i){
-        if(i >= files.length){
-          status.textContent = '완료: '+done+'개' + (failed ? (' · 실패 '+failed+'개') : '');
-          load();
-          return;
-        }
+        if(i >= files.length){ finish(); return; }
+        var def = files[i].name.replace(/\.[^.]+$/, '');
+        var title = window.prompt('제목을 입력하세요 (비워두면 파일명 사용)\n파일: ' + files[i].name, def);
+        if(title === null) title = def;
+        title = title.trim() || def;
+        status.textContent = '업로드 중… ('+(done+failed)+'/'+files.length+')';
         var fd = new FormData();
         fd.append('file', files[i]);
-        fd.append('title', files[i].name.replace(/\.[^.]+$/, ''));
+        fd.append('title', title);
         fetch('/api/research', { method:'POST', headers:{ 'x-upload-token': token }, body: fd })
           .then(function(r){
-            if(r.status === 401){ localStorage.removeItem(TOKKEY); throw new Error('비밀번호가 올바르지 않습니다'); }
-            if(!r.ok) throw new Error('HTTP '+r.status);
-            done++;
+            if(r.ok){ done++; next(i+1); return; }
+            return r.text().then(function(t){
+              var detail = '';
+              try{ detail = (JSON.parse(t) || {}).error || ''; }catch(e){ detail = (t || '').replace(/\s+/g,' ').slice(0,120); }
+              fail(r.status, detail);
+              next(i+1);
+            });
           })
-          .catch(function(e){ failed++; status.textContent = '오류: '+e.message; })
-          .finally(function(){ status.textContent = '업로드 중… ('+(done+failed)+'/'+files.length+')'; next(i+1); });
+          .catch(function(e){ fail(0, e && e.message); next(i+1); });
       }
       next(0);
     }
@@ -328,18 +349,23 @@
     section.addEventListener('dragleave', function(e){ if(e.target === section) dz.classList.remove('is-over'); });
     section.addEventListener('drop', function(e){ if(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length){ e.preventDefault(); dz.classList.remove('is-over'); upload(e.dataTransfer.files); } });
 
-    // 삭제(이벤트 위임)
+    // 삭제(이벤트 위임) — 삭제 시 비밀번호 입력 필수
     grid.addEventListener('click', function(e){
       var btn = e.target.closest && e.target.closest('.research-del');
       if(!btn) return;
       e.preventDefault();
       var id = btn.getAttribute('data-id');
-      if(!window.confirm('이 결과물을 삭제할까요?')) return;
-      var token = getToken();
-      if(!token) return;
-      fetch('/api/research/'+encodeURIComponent(id), { method:'DELETE', headers:{ 'x-upload-token': token } })
-        .then(function(r){ if(r.status === 401){ localStorage.removeItem(TOKKEY); throw new Error('비밀번호 오류'); } if(!r.ok && r.status !== 404) throw new Error('HTTP '+r.status); load(); })
-        .catch(function(e){ status.textContent = '삭제 오류: '+e.message; });
+      var pw = window.prompt('삭제하려면 업로드 비밀번호를 입력하세요');
+      if(!pw) return;
+      status.style.color = '';
+      fetch('/api/research/'+encodeURIComponent(id), { method:'DELETE', headers:{ 'x-upload-token': pw } })
+        .then(function(r){
+          if(r.status === 401){ status.style.color = '#c0392b'; status.textContent = '삭제 실패: 비밀번호 오류(401)'; return; }
+          if(!r.ok && r.status !== 404){ status.style.color = '#c0392b'; status.textContent = '삭제 오류: HTTP '+r.status; return; }
+          status.textContent = '삭제되었습니다.';
+          load();
+        })
+        .catch(function(e){ status.style.color = '#c0392b'; status.textContent = '삭제 오류: '+(e && e.message); });
     });
 
     load();
