@@ -33,6 +33,13 @@
   .filelist-wrap{overflow-x:auto}
   .filelist-table{width:100%;border-collapse:collapse;font-size:13px}
   .filelist-table th{text-align:left;font-weight:600;font-size:12px;color:var(--muted);padding:0 12px 10px;border-bottom:1.5px solid var(--border);white-space:nowrap}
+  .filelist-table th.sortable{cursor:pointer;user-select:none;-webkit-user-select:none}
+  .filelist-table th.sortable:hover{color:var(--brand)}
+  .filelist-table th.sortable::after{content:'';display:inline-block;margin-left:5px;opacity:.55}
+  .filelist-table th.sort-asc{color:var(--brand)}
+  .filelist-table th.sort-desc{color:var(--brand)}
+  .filelist-table th.sort-asc::after{content:'▲';font-size:9px}
+  .filelist-table th.sort-desc::after{content:'▼';font-size:9px}
   .filelist-table td{padding:13px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
   .filelist-table tr:hover td{background:var(--surface)}
   .filelist-table .col-size,.filelist-table .col-date{white-space:nowrap;color:var(--muted)}
@@ -104,7 +111,7 @@
       </div>
       <div class="filelist-wrap">
         <table class="filelist-table">
-          <thead><tr><th class="col-name">이름</th><th class="col-size">크기</th><th class="col-date">업로드</th><th class="col-act"></th></tr></thead>
+          <thead><tr><th class="col-name sortable" data-sort="name">이름</th><th class="col-size sortable" data-sort="size">크기</th><th class="col-date sortable" data-sort="date">업로드</th><th class="col-act"></th></tr></thead>
           <tbody id="research-tbody"></tbody>
         </table>
       </div>
@@ -284,9 +291,16 @@
     if(!tbody || !dz || !input || !section) return;
 
     var allItems = [];
+    var sortKey = 'date', sortDir = 'desc';
+    var headers = section.querySelectorAll('.filelist-table th.sortable');
 
     function esc(s){ return String(s).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
-    function fmtDate(s){ var d=new Date(s); return isNaN(d)?'':d.toISOString().slice(0,10); }
+    function fmtDate(s){
+      var d = new Date(s);
+      if(isNaN(d)) return '';
+      var p = function(n){ return String(n).padStart(2, '0'); };
+      return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+    }
     function fmtSize(n){
       n = Number(n) || 0;
       if(n < 1024) return n + ' B';
@@ -299,11 +313,22 @@
       applyFilter();
     }
 
+    function sortVal(it){
+      if(sortKey === 'size') return Number(it.size) || 0;
+      if(sortKey === 'date') return new Date(it.uploaded).getTime() || 0;
+      return String(it.name || '').toLowerCase();
+    }
+
     function applyFilter(){
       var q = (search && search.value || '').trim().toLowerCase();
       var list = q ? allItems.filter(function(it){
         return String(it.name || '').toLowerCase().indexOf(q) > -1 || String(it.title || '').toLowerCase().indexOf(q) > -1;
-      }) : allItems;
+      }) : allItems.slice();
+      var dir = sortDir === 'asc' ? 1 : -1;
+      list.sort(function(a, b){
+        var va = sortVal(a), vb = sortVal(b);
+        return va < vb ? -dir : va > vb ? dir : 0;
+      });
       if(count) count.textContent = list.length;
       if(!list.length){
         tbody.innerHTML = '<tr><td class="filelist-empty" colspan="4">'+(allItems.length ? '검색 결과가 없습니다.' : '아직 업로드된 결과물이 없습니다.')+'</td></tr>';
@@ -321,6 +346,25 @@
     }
 
     if(search) search.addEventListener('input', applyFilter);
+
+    function updateSortIndicator(){
+      Array.prototype.forEach.call(headers, function(th){
+        var on = th.getAttribute('data-sort') === sortKey;
+        th.classList.toggle('sort-asc', on && sortDir === 'asc');
+        th.classList.toggle('sort-desc', on && sortDir === 'desc');
+        th.setAttribute('aria-sort', on ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none');
+      });
+    }
+    Array.prototype.forEach.call(headers, function(th){
+      th.addEventListener('click', function(){
+        var key = th.getAttribute('data-sort');
+        if(sortKey === key){ sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
+        else { sortKey = key; sortDir = key === 'name' ? 'asc' : 'desc'; }
+        updateSortIndicator();
+        applyFilter();
+      });
+    });
+    updateSortIndicator();
 
     function load(){
       fetch('/api/research').then(function(r){ return r.ok ? r.json() : []; }).then(render).catch(function(){});
