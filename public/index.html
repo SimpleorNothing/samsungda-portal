@@ -263,16 +263,23 @@
 
     function esc(s){ return String(s).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
     function fmtDate(s){ var d=new Date(s); return isNaN(d)?'':d.toISOString().slice(0,10); }
+    // 제목 표시용: 확장자 제거 후 날짜/일련번호(6자리 이상 숫자) 이후를 잘라 앞부분만 사용
+    function cleanTitle(s){
+      var base = String(s == null ? '' : s).replace(/\.[^.]+$/, '');
+      var cut = base.replace(/[ _-]*\d{6,}.*$/, '').trim();
+      return cut || base.trim() || base;
+    }
 
     function render(items){
       if(!Array.isArray(items) || !items.length){ grid.innerHTML=''; grid.style.display='none'; return; }
       grid.style.display='';
       grid.innerHTML = items.map(function(it){
+        var title = cleanTitle(it.title);
         return '<div class="card research-card">'
-          + '<h3>'+esc(it.title)+'</h3>'
+          + '<h3>'+esc(title)+'</h3>'
           + '<p class="rfile">'+esc(it.name)+'</p>'
           + '<p class="rdate">'+fmtDate(it.uploaded)+'</p>'
-          + '<a class="stretch" href="/research/'+encodeURIComponent(it.id)+'" target="_blank" rel="noopener" aria-label="'+esc(it.title)+' 열기"></a>'
+          + '<a class="stretch" href="/research/'+encodeURIComponent(it.id)+'" target="_blank" rel="noopener" aria-label="'+esc(title)+' 열기"></a>'
           + '<button class="research-del" data-id="'+esc(it.id)+'" title="삭제" aria-label="삭제">×</button>'
           + '</div>';
       }).join('');
@@ -312,14 +319,10 @@
       }
       function next(i){
         if(i >= files.length){ finish(); return; }
-        var def = files[i].name.replace(/\.[^.]+$/, '');
-        var title = window.prompt('제목을 입력하세요 (비워두면 파일명 사용)\n파일: ' + files[i].name, def);
-        if(title === null) title = def;
-        title = title.trim() || def;
         status.textContent = '업로드 중… ('+(done+failed)+'/'+files.length+')';
         var fd = new FormData();
         fd.append('file', files[i]);
-        fd.append('title', title);
+        fd.append('title', files[i].name.replace(/\.[^.]+$/, ''));
         fetch('/api/research', { method:'POST', headers:{ 'x-upload-token': token }, body: fd })
           .then(function(r){
             if(r.ok){ done++; next(i+1); return; }
