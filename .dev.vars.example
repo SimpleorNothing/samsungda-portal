@@ -1,0 +1,3 @@
+# Local dev secrets for `wrangler dev` (copy to .dev.vars, which is gitignored).
+# Password required to upload/delete research files via /api/research.
+UPLOAD_TOKEN=change-me

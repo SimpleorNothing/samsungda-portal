@@ -8,5 +8,8 @@
   },
   "vars": {
     "BACKEND_UPSTREAM": "https://web-production-aeaba.up.railway.app"
-  }
+  },
+  "r2_buckets": [
+    { "binding": "RESEARCH", "bucket_name": "samsungda-research" }
+  ]
 }

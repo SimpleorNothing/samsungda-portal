@@ -23,7 +23,17 @@
   .card h3::after{content:'→';font-size:14px;opacity:.4;margin-left:auto;flex-shrink:0}
   .card p{font-size:13px;color:var(--muted);line-height:1.65}
   .card{user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
-  .card.is-placeholder{border-style:dashed}
+  /* 조사 결과물 카드(동적) */
+  .research-card{position:relative}
+  .research-card h3::after{content:none}
+  .research-card .stretch{position:absolute;inset:0;z-index:1;border-radius:14px}
+  .research-card .research-del{position:absolute;top:10px;right:10px;z-index:2;width:24px;height:24px;padding:0;border:none;border-radius:7px;background:#eef1f5;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;opacity:0;transition:opacity .12s,background .12s,color .12s}
+  .research-card:hover .research-del{opacity:1}
+  .research-card .research-del:hover{background:#ffe1e1;color:#c0392b}
+  .dropzone{margin-top:14px;border:1.5px dashed var(--border);border-radius:14px;padding:22px;text-align:center;color:var(--muted);font-size:14px;cursor:pointer;transition:border-color .15s,background .15s,color .15s}
+  .dropzone:hover{border-color:var(--brand)}
+  .dropzone.is-over{border-color:var(--brand);background:rgba(18,87,214,.06);color:var(--brand)}
+  .upload-status{margin-top:10px;font-size:13px;color:var(--muted);min-height:18px}
   /* 데스크톱 자유 배치(그리드 칸 스냅) 모드 */
   .grid.is-free{display:block;position:relative}
   .grid.is-free .card{position:absolute;margin:0;cursor:grab}
@@ -44,7 +54,7 @@
       <h2>자동화 도구 모음</h2>
       <p class="desc">기획 업무를 돕는 자동화 도구입니다.</p>
     </div>
-    <div class="grid" data-store="tools">
+    <div class="grid" data-store="tools" data-drag>
       <a class="card" href="/agent-guide">
         <h3>클로드로 워드보고서 작성하기</h3>
         <p>Claude AI 에이전트 활용법과 실전 예제를 안내합니다.</p>
@@ -64,25 +74,17 @@
     </div>
   </section>
 
-  <section class="section">
+  <section class="section" id="research-section">
     <div class="section-head">
       <h2>조사 결과물 모음</h2>
-      <p class="desc">시장·경쟁사 조사 결과를 모읍니다. 아래는 예시이며 추후 계속 업데이트됩니다.</p>
+      <p class="desc">시장·경쟁사 조사 결과를 모읍니다. 파일을 끌어다 놓으면 업로드됩니다.</p>
     </div>
-    <div class="grid" data-store="research">
-      <a class="card is-placeholder" href="#" data-key="research-market-2026">
-        <h3>글로벌 가전 시장 동향 2026</h3>
-        <p>주요 시장 규모·성장률과 카테고리별 트렌드를 정리합니다. (예시)</p>
-      </a>
-      <a class="card is-placeholder" href="#" data-key="research-competitor-lineup">
-        <h3>경쟁사 제품 라인업 분석</h3>
-        <p>주요 경쟁사의 신제품과 가격 포지셔닝을 비교합니다. (예시)</p>
-      </a>
-      <a class="card is-placeholder" href="#" data-key="research-consumer-insight">
-        <h3>소비자 인사이트 리포트</h3>
-        <p>타깃 고객의 니즈와 구매 행동을 분석합니다. (예시)</p>
-      </a>
+    <div class="grid" id="research-grid"></div>
+    <div class="dropzone" id="research-dropzone" role="button" tabindex="0">
+      파일을 여기로 끌어다 놓거나 클릭해서 업로드
+      <input id="research-file" type="file" multiple hidden>
     </div>
+    <p class="upload-status" id="research-status" aria-live="polite"></p>
   </section>
 
   <footer class="updated">최종 업데이트: 2026-05-23 22:13</footer>
@@ -243,7 +245,110 @@
     }, true);
   }
 
-  Array.prototype.forEach.call(document.querySelectorAll('.grid'), initGrid);
+  // 드래그 재배치는 도구 그리드에만 적용
+  Array.prototype.forEach.call(document.querySelectorAll('.grid[data-drag]'), initGrid);
+
+  // 조사 결과물: 목록 표시 + 드래그&드롭 업로드 + 삭제
+  function initResearch(){
+    var grid = document.getElementById('research-grid');
+    var section = document.getElementById('research-section');
+    var dz = document.getElementById('research-dropzone');
+    var input = document.getElementById('research-file');
+    var status = document.getElementById('research-status');
+    if(!grid || !dz || !input || !section) return;
+    var TOKKEY = 'research-upload-token';
+
+    function esc(s){ return String(s).replace(/[&<>"']/g, function(m){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]; }); }
+    function fmtSize(n){ if(!n && n!==0) return ''; var u=['B','KB','MB','GB']; var i=0; while(n>=1024 && i<u.length-1){ n/=1024; i++; } return (i?n.toFixed(1):n)+' '+u[i]; }
+    function fmtDate(s){ var d=new Date(s); return isNaN(d)?'':d.toISOString().slice(0,10); }
+
+    function render(items){
+      if(!Array.isArray(items) || !items.length){ grid.innerHTML=''; grid.style.display='none'; return; }
+      grid.style.display='';
+      grid.innerHTML = items.map(function(it){
+        var meta = [esc(it.name), fmtSize(it.size), fmtDate(it.uploaded)].filter(Boolean).join(' · ');
+        return '<div class="card research-card">'
+          + '<h3>'+esc(it.title)+'</h3>'
+          + '<p>'+meta+'</p>'
+          + '<a class="stretch" href="/research/'+encodeURIComponent(it.id)+'" target="_blank" rel="noopener" aria-label="'+esc(it.title)+' 열기"></a>'
+          + '<button class="research-del" data-id="'+esc(it.id)+'" title="삭제" aria-label="삭제">×</button>'
+          + '</div>';
+      }).join('');
+    }
+
+    function load(){
+      fetch('/api/research').then(function(r){ return r.ok ? r.json() : []; }).then(render).catch(function(){});
+    }
+
+    function getToken(){
+      var t = localStorage.getItem(TOKKEY);
+      if(!t){ t = window.prompt('업로드 비밀번호를 입력하세요'); if(t){ localStorage.setItem(TOKKEY, t); } }
+      return t;
+    }
+
+    function upload(fileList){
+      var files = fileList ? Array.prototype.slice.call(fileList) : [];
+      if(!files.length) return;
+      var token = getToken();
+      if(!token){ status.textContent = '업로드 취소됨 (비밀번호 필요).'; return; }
+      var done = 0, failed = 0;
+      status.textContent = '업로드 중… (0/'+files.length+')';
+      function next(i){
+        if(i >= files.length){
+          status.textContent = '완료: '+done+'개' + (failed ? (' · 실패 '+failed+'개') : '');
+          load();
+          return;
+        }
+        var fd = new FormData();
+        fd.append('file', files[i]);
+        fd.append('title', files[i].name.replace(/\.[^.]+$/, ''));
+        fetch('/api/research', { method:'POST', headers:{ 'x-upload-token': token }, body: fd })
+          .then(function(r){
+            if(r.status === 401){ localStorage.removeItem(TOKKEY); throw new Error('비밀번호가 올바르지 않습니다'); }
+            if(!r.ok) throw new Error('HTTP '+r.status);
+            done++;
+          })
+          .catch(function(e){ failed++; status.textContent = '오류: '+e.message; })
+          .finally(function(){ status.textContent = '업로드 중… ('+(done+failed)+'/'+files.length+')'; next(i+1); });
+      }
+      next(0);
+    }
+
+    function hasFiles(e){ var t = e.dataTransfer && e.dataTransfer.types; return t && Array.prototype.indexOf.call(t, 'Files') > -1; }
+
+    dz.addEventListener('dragover', function(e){ e.preventDefault(); dz.classList.add('is-over'); });
+    dz.addEventListener('dragleave', function(){ dz.classList.remove('is-over'); });
+    dz.addEventListener('drop', function(e){ e.preventDefault(); e.stopPropagation(); dz.classList.remove('is-over'); upload(e.dataTransfer.files); });
+    dz.addEventListener('click', function(){ input.click(); });
+    dz.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); input.click(); } });
+    input.addEventListener('change', function(){ upload(input.files); input.value = ''; });
+
+    // 섹션 어디에 떨어뜨려도 업로드
+    section.addEventListener('dragover', function(e){ if(hasFiles(e)){ e.preventDefault(); dz.classList.add('is-over'); } });
+    section.addEventListener('dragleave', function(e){ if(e.target === section) dz.classList.remove('is-over'); });
+    section.addEventListener('drop', function(e){ if(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length){ e.preventDefault(); dz.classList.remove('is-over'); upload(e.dataTransfer.files); } });
+
+    // 삭제(이벤트 위임)
+    grid.addEventListener('click', function(e){
+      var btn = e.target.closest && e.target.closest('.research-del');
+      if(!btn) return;
+      e.preventDefault();
+      var id = btn.getAttribute('data-id');
+      if(!window.confirm('이 결과물을 삭제할까요?')) return;
+      var token = getToken();
+      if(!token) return;
+      fetch('/api/research/'+encodeURIComponent(id), { method:'DELETE', headers:{ 'x-upload-token': token } })
+        .then(function(r){ if(r.status === 401){ localStorage.removeItem(TOKKEY); throw new Error('비밀번호 오류'); } if(!r.ok && r.status !== 404) throw new Error('HTTP '+r.status); load(); })
+        .catch(function(e){ status.textContent = '삭제 오류: '+e.message; });
+    });
+
+    load();
+  }
+  initResearch();
+
+  // 파일을 페이지 밖 영역에 떨어뜨렸을 때 브라우저가 파일을 여는 기본 동작 방지
+  window.addEventListener('dragover', function(e){ if(e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') > -1) e.preventDefault(); });
+  window.addEventListener('drop', function(e){ if(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) e.preventDefault(); });
 })();
 </script>
 </body>
