@@ -28,7 +28,8 @@
   .research-card h3::after{content:none}
   .research-card h3{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;line-height:1.35;min-height:2.7em}
   .research-card .rfile{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .research-card .rdate{color:var(--muted);margin-top:2px}
+  .research-card .rdate{color:var(--muted);margin-top:2px;display:flex;justify-content:space-between;gap:8px}
+  .research-card .rdate .rby{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:55%;text-align:right}
   .research-card .stretch{position:absolute;inset:0;z-index:1;border-radius:14px}
   .research-card .research-del{position:absolute;top:10px;right:10px;z-index:2;width:24px;height:24px;padding:0;border:none;border-radius:7px;background:#eef1f5;color:var(--muted);font-size:16px;line-height:1;cursor:pointer;opacity:0;transition:opacity .12s,background .12s,color .12s}
   .research-card:hover .research-del{opacity:1}
@@ -278,7 +279,7 @@
         return '<div class="card research-card">'
           + '<h3>'+esc(title)+'</h3>'
           + '<p class="rfile">'+esc(it.name)+'</p>'
-          + '<p class="rdate">'+fmtDate(it.uploaded)+'</p>'
+          + '<p class="rdate"><span>'+fmtDate(it.uploaded)+'</span>'+(it.uploader ? '<span class="rby">'+esc(it.uploader)+'</span>' : '')+'</p>'
           + '<a class="stretch" href="/research/'+encodeURIComponent(it.id)+'" target="_blank" rel="noopener" aria-label="'+esc(title)+' 열기"></a>'
           + '<button class="research-del" data-id="'+esc(it.id)+'" title="삭제" aria-label="삭제">×</button>'
           + '</div>';
@@ -319,12 +320,14 @@
       }
       function next(i){
         if(i >= files.length){ finish(); return; }
+        var uploader = window.prompt('업로드한 사람 이름을 입력하세요\n파일: ' + files[i].name) || '';
         var filePw = window.prompt('이 파일의 삭제 비밀번호를 설정하세요\n(삭제하려면 이 비밀번호를 입력해야 합니다)\n파일: ' + files[i].name);
         if(!filePw){ failed++; lastErr = '파일 비밀번호 미설정으로 건너뜀'; next(i+1); return; }
         status.textContent = '업로드 중… ('+(done+failed)+'/'+files.length+')';
         var fd = new FormData();
         fd.append('file', files[i]);
         fd.append('title', files[i].name.replace(/\.[^.]+$/, ''));
+        fd.append('uploader', uploader);
         fd.append('password', filePw);
         fetch('/api/research', { method:'POST', headers:{ 'x-upload-token': token }, body: fd })
           .then(function(r){

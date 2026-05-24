@@ -54,6 +54,7 @@ async function handleResearchApi(request, env, id) {
         size: o.size,
         type: o.httpMetadata?.contentType || "",
         uploaded: o.uploaded,
+        uploader: o.customMetadata?.uploader ? decodeURIComponent(o.customMetadata.uploader) : "",
       }));
       items.sort((a, b) => new Date(b.uploaded) - new Date(a.uploaded));
       return json(items);
@@ -73,12 +74,13 @@ async function handleResearchApi(request, env, id) {
       if (!password) return json({ error: "file password required" }, 400);
       const name = String(file.name || "untitled");
       const title = String(form.get("title") || name.replace(/\.[^.]+$/, ""));
+      const uploader = String(form.get("uploader") || "").slice(0, 40);
       const safe = (name.replace(/[^\w.\-]+/g, "_").slice(-80)) || "file";
       const key = Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7) + "-" + safe;
       const { pwhash, pwsalt } = await hashPassword(password);
       await env.RESEARCH.put(key, await file.arrayBuffer(), {
         httpMetadata: { contentType: file.type || "application/octet-stream" },
-        customMetadata: { title: encodeURIComponent(title), name: encodeURIComponent(name), pwhash, pwsalt },
+        customMetadata: { title: encodeURIComponent(title), name: encodeURIComponent(name), uploader: encodeURIComponent(uploader), pwhash, pwsalt },
       });
       return json({ id: key, title, name }, 201);
     }
