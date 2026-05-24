@@ -12,6 +12,34 @@ function authorized(request, env) {
   return !!env.UPLOAD_TOKEN && token === env.UPLOAD_TOKEN;
 }
 
+function bytesToHex(bytes) {
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+function hexToBytes(hex) {
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.substr(i * 2, 2), 16);
+  return out;
+}
+async function pbkdf2(password, salt) {
+  const km = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" }, km, 256);
+  return new Uint8Array(bits);
+}
+async function hashPassword(password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  return { pwhash: bytesToHex(await pbkdf2(password, salt)), pwsalt: bytesToHex(salt) };
+}
+function timingSafeEqual(a, b) {
+  if (a.length !== b.length) return false;
+  let r = 0;
+  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return r === 0;
+}
+async function verifyPassword(password, pwhash, pwsalt) {
+  if (!password || !pwhash || !pwsalt) return false;
+  return timingSafeEqual(bytesToHex(await pbkdf2(password, hexToBytes(pwsalt))), pwhash);
+}
+
 async function handleResearchApi(request, env, id) {
   if (!env.RESEARCH) return json({ error: "R2 bucket not configured" }, 503);
 
@@ -41,13 +69,16 @@ async function handleResearchApi(request, env, id) {
       }
       const file = form.get("file");
       if (!file || typeof file.arrayBuffer !== "function") return json({ error: "missing file" }, 400);
+      const password = String(form.get("password") || "");
+      if (!password) return json({ error: "file password required" }, 400);
       const name = String(file.name || "untitled");
       const title = String(form.get("title") || name.replace(/\.[^.]+$/, ""));
       const safe = (name.replace(/[^\w.\-]+/g, "_").slice(-80)) || "file";
       const key = Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7) + "-" + safe;
+      const { pwhash, pwsalt } = await hashPassword(password);
       await env.RESEARCH.put(key, await file.arrayBuffer(), {
         httpMetadata: { contentType: file.type || "application/octet-stream" },
-        customMetadata: { title: encodeURIComponent(title), name: encodeURIComponent(name) },
+        customMetadata: { title: encodeURIComponent(title), name: encodeURIComponent(name), pwhash, pwsalt },
       });
       return json({ id: key, title, name }, 201);
     }
@@ -56,7 +87,19 @@ async function handleResearchApi(request, env, id) {
 
   // Item: /api/research/<id>
   if (request.method === "DELETE") {
-    if (!authorized(request, env)) return json({ error: "unauthorized" }, 401);
+    const obj = await env.RESEARCH.head(id);
+    if (!obj) return new Response(null, { status: 204 }); // already gone
+    const provided = request.headers.get("x-file-password") || "";
+    const meta = obj.customMetadata || {};
+    let ok;
+    if (meta.pwhash && meta.pwsalt) {
+      // delete requires the per-file password set by the uploader
+      ok = await verifyPassword(provided, meta.pwhash, meta.pwsalt);
+    } else {
+      // legacy item (no per-file password): fall back to the shared upload token
+      ok = !!env.UPLOAD_TOKEN && provided === env.UPLOAD_TOKEN;
+    }
+    if (!ok) return json({ error: "wrong password" }, 403);
     await env.RESEARCH.delete(id);
     return new Response(null, { status: 204 });
   }

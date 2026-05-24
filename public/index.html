@@ -291,7 +291,7 @@
 
     function getToken(){
       var t = localStorage.getItem(TOKKEY);
-      if(!t){ t = window.prompt('업로드 비밀번호를 입력하세요'); if(t){ localStorage.setItem(TOKKEY, t); } }
+      if(!t){ t = window.prompt('공용 업로드 비밀번호를 입력하세요 (업로드 권한)'); if(t){ localStorage.setItem(TOKKEY, t); } }
       return t;
     }
 
@@ -299,7 +299,7 @@
       var files = fileList ? Array.prototype.slice.call(fileList) : [];
       if(!files.length) return;
       var token = getToken();
-      if(!token){ status.textContent = '업로드 취소됨 (비밀번호 필요).'; return; }
+      if(!token){ status.textContent = '업로드 취소됨 (공용 업로드 암호 필요).'; return; }
       var done = 0, failed = 0, lastErr = '';
       status.style.color = '';
       status.textContent = '업로드 중… (0/'+files.length+')';
@@ -319,10 +319,13 @@
       }
       function next(i){
         if(i >= files.length){ finish(); return; }
+        var filePw = window.prompt('이 파일의 삭제 비밀번호를 설정하세요\n(삭제하려면 이 비밀번호를 입력해야 합니다)\n파일: ' + files[i].name);
+        if(!filePw){ failed++; lastErr = '파일 비밀번호 미설정으로 건너뜀'; next(i+1); return; }
         status.textContent = '업로드 중… ('+(done+failed)+'/'+files.length+')';
         var fd = new FormData();
         fd.append('file', files[i]);
         fd.append('title', files[i].name.replace(/\.[^.]+$/, ''));
+        fd.append('password', filePw);
         fetch('/api/research', { method:'POST', headers:{ 'x-upload-token': token }, body: fd })
           .then(function(r){
             if(r.ok){ done++; next(i+1); return; }
@@ -352,19 +355,19 @@
     section.addEventListener('dragleave', function(e){ if(e.target === section) dz.classList.remove('is-over'); });
     section.addEventListener('drop', function(e){ if(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length){ e.preventDefault(); dz.classList.remove('is-over'); upload(e.dataTransfer.files); } });
 
-    // 삭제(이벤트 위임) — 삭제 시 비밀번호 입력 필수
+    // 삭제(이벤트 위임) — 그 파일에 설정된 비밀번호를 입력해야 삭제됨
     grid.addEventListener('click', function(e){
       var btn = e.target.closest && e.target.closest('.research-del');
       if(!btn) return;
       e.preventDefault();
       var id = btn.getAttribute('data-id');
-      var pw = window.prompt('삭제하려면 업로드 비밀번호를 입력하세요');
+      var pw = window.prompt('이 파일의 비밀번호를 입력하세요\n(올린 사람이 업로드 시 설정한 비밀번호)');
       if(!pw) return;
       status.style.color = '';
-      fetch('/api/research/'+encodeURIComponent(id), { method:'DELETE', headers:{ 'x-upload-token': pw } })
+      fetch('/api/research/'+encodeURIComponent(id), { method:'DELETE', headers:{ 'x-file-password': pw } })
         .then(function(r){
-          if(r.status === 401){ status.style.color = '#c0392b'; status.textContent = '삭제 실패: 비밀번호 오류(401)'; return; }
-          if(!r.ok && r.status !== 404){ status.style.color = '#c0392b'; status.textContent = '삭제 오류: HTTP '+r.status; return; }
+          if(r.status === 401 || r.status === 403){ status.style.color = '#c0392b'; status.textContent = '삭제 실패: 비밀번호가 올바르지 않습니다.'; return; }
+          if(!r.ok && r.status !== 204){ status.style.color = '#c0392b'; status.textContent = '삭제 오류: HTTP '+r.status; return; }
           status.textContent = '삭제되었습니다.';
           load();
         })
