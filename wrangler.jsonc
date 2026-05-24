@@ -4,7 +4,11 @@
   "main": "src/index.js",
   "assets": {
     "directory": "./public",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    // Run the Worker before serving static assets so the password gate can
+    // protect "/" too. Without this, Cloudflare serves public/index.html
+    // directly and the Worker (and its gate) never runs for the home page.
+    "run_worker_first": true
   },
   "vars": {
     "BACKEND_UPSTREAM": "https://web-production-aeaba.up.railway.app"
