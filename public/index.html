@@ -44,7 +44,8 @@
   .filelist-table tr:hover td{background:var(--surface)}
   .filelist-table .col-size,.filelist-table .col-date{white-space:nowrap;color:var(--muted)}
   .filelist-table .col-act{text-align:right;white-space:nowrap}
-  .filelist .fname{font-weight:600;overflow-wrap:anywhere}
+  .filelist .fname{font-weight:600;overflow-wrap:anywhere;color:var(--text);text-decoration:none;cursor:pointer}
+  .filelist .fname:hover{color:var(--brand);text-decoration:underline}
   .filelist .fdl{color:var(--brand);text-decoration:none;font-weight:600;margin-right:6px}
   .filelist .fdl:hover{text-decoration:underline}
   .filelist .fdel{font:inherit;font-size:13px;color:var(--muted);background:transparent;border:none;cursor:pointer;padding:4px 8px;border-radius:7px;transition:background .12s,color .12s}
@@ -378,7 +379,7 @@
         var sel = !!selected[it.id];
         return '<tr'+(sel ? ' class="is-selected"' : '')+'>'
           + '<td class="col-check"><input type="checkbox" class="fchk" data-id="'+esc(it.id)+'"'+(sel ? ' checked' : '')+' aria-label="선택"></td>'
-          + '<td class="col-name"><span class="fname">'+esc(it.name)+'</span></td>'
+          + '<td class="col-name"><a class="fname" href="/research/'+encodeURIComponent(it.id)+'" target="_blank" rel="noopener">'+esc(it.name)+'</a></td>'
           + '<td class="col-size">'+fmtSize(it.size)+'</td>'
           + '<td class="col-date">'+fmtDate(it.uploaded)+'</td>'
           + '<td class="col-act"><a class="fdl" href="/research/'+encodeURIComponent(it.id)+'" target="_blank" rel="noopener">다운로드</a>'
