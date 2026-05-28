@@ -15,5 +15,15 @@
   },
   "r2_buckets": [
     { "binding": "RESEARCH", "bucket_name": "samsungda-research" }
+  ],
+  // 접속 로그 저장용 D1 데이터베이스. 최초 1회 아래 명령으로 DB를 만들고,
+  // 출력된 database_id를 여기에 채워넣은 뒤 배포하면 된다(테이블은 첫 접속 시 자동 생성):
+  //   wrangler d1 create samsungda-access-logs
+  "d1_databases": [
+    {
+      "binding": "ACCESS_LOG",
+      "database_name": "samsungda-access-logs",
+      "database_id": "PUT-YOUR-D1-DATABASE-ID-HERE"
+    }
   ]
 }
