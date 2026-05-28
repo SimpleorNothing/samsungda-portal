@@ -216,6 +216,14 @@ async function serveResearchFile(env, id) {
   headers.set("etag", obj.httpEtag);
   if (!headers.get("content-type")) headers.set("content-type", "application/octet-stream");
   headers.set("x-content-type-options", "nosniff");
+  // 다운로드 시 R2 키(랜덤 prefix가 붙은 이름) 대신 업로드 당시의 원본 파일명을 사용한다.
+  const meta = obj.customMetadata || {};
+  if (meta.name) {
+    const original = decodeURIComponent(meta.name);
+    const encoded = encodeURIComponent(original);
+    const ascii = original.replace(/[^\x20-\x7E]/g, "_").replace(/["\\]/g, "_");
+    headers.set("content-disposition", `attachment; filename="${ascii}"; filename*=UTF-8''${encoded}`);
+  }
   headers.set("cache-control", "private, max-age=300");
   // Render uploaded content in an opaque origin so it can never read the
   // portal's storage/cookies (protects the saved upload token).
