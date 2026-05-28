@@ -226,8 +226,185 @@ async function serveResearchFile(env, id) {
   return new Response(obj.body, { headers });
 }
 
+// ── 접속 로그(D1) ────────────────────────────────────────────────────────────
+// 요청마다 IP/브라우저/시각을 남겨, 날짜별 고유 방문자를 집계할 수 있게 한다.
+// 날짜 경계는 한국시간(KST, UTC+9) 기준 — "5월 28일"을 사용자가 생각하는 그대로 끊는다.
+function kstDay(date) {
+  return new Date(date.getTime() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+}
+function fmtKstTime(iso) {
+  if (!iso) return "";
+  const k = new Date(new Date(iso).getTime() + 9 * 3600 * 1000);
+  const p = (n) => String(n).padStart(2, "0");
+  return `${p(k.getUTCHours())}:${p(k.getUTCMinutes())}:${p(k.getUTCSeconds())}`;
+}
+function shiftDay(day, delta) {
+  const d = new Date(day + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + delta);
+  return d.toISOString().slice(0, 10);
+}
+
+// User-Agent 문자열에서 브라우저 종류를 뽑아낸다. 순서 중요(Edge/삼성은 UA에
+// "Chrome"을 포함하므로 먼저 가려낸다).
+function parseBrowser(ua) {
+  if (!ua) return "Unknown";
+  if (/bot|crawler|spider|crawling|facebookexternalhit|slurp|bingpreview|monitor/i.test(ua)) return "Bot";
+  if (/SamsungBrowser/i.test(ua)) return "Samsung Internet";
+  if (/Edg\//i.test(ua)) return "Edge";
+  if (/OPR\/|Opera/i.test(ua)) return "Opera";
+  if (/Chrome\//i.test(ua) && !/Chromium/i.test(ua)) return "Chrome";
+  if (/Firefox\//i.test(ua)) return "Firefox";
+  if (/Safari/i.test(ua)) return "Safari";
+  return "Other";
+}
+
+// 첫 기록 시 한 번만 테이블을 만든다(아이솔레이트당 1회). 이렇게 하면 별도의
+// 마이그레이션 실행 없이 D1만 연결해도 바로 동작한다.
+let schemaReady = false;
+async function ensureSchema(db) {
+  if (schemaReady) return;
+  await db.exec(
+    "CREATE TABLE IF NOT EXISTS access_log (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT NOT NULL, day TEXT NOT NULL, ip TEXT, ua TEXT, browser TEXT, path TEXT, method TEXT, country TEXT)"
+  );
+  await db.exec("CREATE INDEX IF NOT EXISTS idx_access_day ON access_log(day)");
+  schemaReady = true;
+}
+
+function logAccess(env, ctx, request, url) {
+  if (!env.ACCESS_LOG) return; // D1 미연결 시 무동작
+  if (url.pathname.startsWith("/__")) return; // 로그/인증 내부 경로는 기록 제외
+  const now = new Date();
+  const ua = request.headers.get("user-agent") || "";
+  const row = {
+    ts: now.toISOString(),
+    day: kstDay(now),
+    ip: request.headers.get("cf-connecting-ip") || "",
+    ua: ua.slice(0, 300),
+    browser: parseBrowser(ua),
+    path: url.pathname.slice(0, 200),
+    method: request.method,
+    country: (request.cf && request.cf.country) || request.headers.get("cf-ipcountry") || "",
+  };
+  // 로깅이 절대 요청을 깨뜨리지 않도록 백그라운드에서 처리하고 오류는 삼킨다.
+  ctx.waitUntil(
+    (async () => {
+      try {
+        await ensureSchema(env.ACCESS_LOG);
+        await env.ACCESS_LOG.prepare(
+          "INSERT INTO access_log (ts,day,ip,ua,browser,path,method,country) VALUES (?,?,?,?,?,?,?,?)"
+        )
+          .bind(row.ts, row.day, row.ip, row.ua, row.browser, row.path, row.method, row.country)
+          .run();
+      } catch {
+        /* noop */
+      }
+    })()
+  );
+}
+
+async function renderLogsPage(env, url) {
+  if (!env.ACCESS_LOG) {
+    return new Response("ACCESS_LOG D1 바인딩이 설정되지 않았습니다. wrangler.jsonc 참고.", {
+      status: 503,
+      headers: TEXT,
+    });
+  }
+  await ensureSchema(env.ACCESS_LOG);
+  const day = (url.searchParams.get("date") || kstDay(new Date())).slice(0, 10);
+  const db = env.ACCESS_LOG;
+
+  const uniq = (await db.prepare("SELECT COUNT(DISTINCT ip) AS n FROM access_log WHERE day=?").bind(day).first()) || { n: 0 };
+  const total = (await db.prepare("SELECT COUNT(*) AS n FROM access_log WHERE day=?").bind(day).first()) || { n: 0 };
+  const visitors =
+    (
+      await db
+        .prepare(
+          "SELECT ip, COUNT(*) AS hits, MIN(ts) AS first_seen, MAX(ts) AS last_seen, " +
+            "GROUP_CONCAT(DISTINCT browser) AS browsers, GROUP_CONCAT(DISTINCT country) AS countries " +
+            "FROM access_log WHERE day=? GROUP BY ip ORDER BY hits DESC"
+        )
+        .bind(day)
+        .all()
+    ).results || [];
+  const browsers =
+    (
+      await db
+        .prepare(
+          "SELECT browser, COUNT(DISTINCT ip) AS visitors, COUNT(*) AS hits FROM access_log WHERE day=? GROUP BY browser ORDER BY visitors DESC, hits DESC"
+        )
+        .bind(day)
+        .all()
+    ).results || [];
+
+  const esc = (s) => escAttr(s == null ? "" : s);
+  const visitorRows =
+    visitors
+      .map(
+        (v, i) =>
+          `<tr><td>${i + 1}</td><td class="mono">${esc(v.ip) || "(미상)"}</td><td>${esc(v.browsers)}</td><td>${esc(
+            v.countries
+          )}</td><td class="num">${v.hits}</td><td class="mono">${fmtKstTime(v.first_seen)}</td><td class="mono">${fmtKstTime(
+            v.last_seen
+          )}</td></tr>`
+      )
+      .join("") || `<tr><td colspan="7" class="empty">이 날짜에는 접속 기록이 없습니다.</td></tr>`;
+  const browserRows =
+    browsers
+      .map((b) => `<tr><td>${esc(b.browser)}</td><td class="num">${b.visitors}</td><td class="num">${b.hits}</td></tr>`)
+      .join("") || `<tr><td colspan="3" class="empty">—</td></tr>`;
+
+  const html = `<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>접속 로그 — ${esc(day)}</title>
+<style>
+  :root{--bg:#fff;--surface:#f6f7f9;--text:#1a1d21;--muted:#5b6470;--border:#e6e9ee;--brand:#1257d6}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:var(--text);background:var(--bg);padding:28px;max-width:920px;margin:0 auto}
+  h1{font-size:22px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px}
+  .day{color:var(--muted);font-size:14px;margin-bottom:20px}
+  .nav{display:flex;gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+  .nav a,.nav button{font:inherit;font-size:13px;text-decoration:none;color:var(--text);background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;cursor:pointer}
+  .nav input[type=date]{font:inherit;font-size:13px;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px}
+  .cards{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+  .card{flex:1;min-width:160px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px 18px}
+  .card .k{color:var(--muted);font-size:13px;margin-bottom:6px}
+  .card .v{font-size:28px;font-weight:800;letter-spacing:-1px}
+  h2{font-size:15px;font-weight:700;margin:24px 0 10px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-weight:600;font-size:12px}
+  td.num,td.mono{font-variant-numeric:tabular-nums}
+  td.num{text-align:right}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .empty{color:var(--muted);text-align:center;padding:20px}
+</style></head><body>
+  <h1>접속 로그</h1>
+  <p class="day">${esc(day)} (한국시간 기준)</p>
+  <form class="nav" method="GET" action="/__logs">
+    <a href="/__logs?date=${esc(shiftDay(day, -1))}">← 이전날</a>
+    <input type="date" name="date" value="${esc(day)}">
+    <button type="submit">조회</button>
+    <a href="/__logs?date=${esc(shiftDay(day, 1))}">다음날 →</a>
+    <a href="/__logs?date=${esc(kstDay(new Date()))}">오늘</a>
+  </form>
+  <div class="cards">
+    <div class="card"><div class="k">고유 방문자 (IP 기준)</div><div class="v">${uniq.n}</div></div>
+    <div class="card"><div class="k">총 요청 수</div><div class="v">${total.n}</div></div>
+  </div>
+  <h2>방문자별 (IP 단위로 1명 = 1줄)</h2>
+  <table><thead><tr><th>#</th><th>IP</th><th>브라우저</th><th>국가</th><th class="num">요청</th><th>첫 접속</th><th>마지막</th></tr></thead><tbody>${visitorRows}</tbody></table>
+  <h2>브라우저별 집계</h2>
+  <table><thead><tr><th>브라우저</th><th class="num">방문자</th><th class="num">요청</th></tr></thead><tbody>${browserRows}</tbody></table>
+</body></html>`;
+  return new Response(html, {
+    status: 200,
+    headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+  });
+}
+
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -240,6 +417,14 @@ export default {
       if (!(await isAuthed(request, env))) {
         return loginPage(path + (url.search || ""), false);
       }
+    }
+
+    // 인증을 통과한 실제 접속만 기록한다(로그인 페이지에서 튕긴 요청은 제외).
+    logAccess(env, ctx, request, url);
+
+    // 관리자용 접속 로그 조회 페이지(이미 사이트 비밀번호 게이트로 보호됨)
+    if (path === "/__logs" && request.method === "GET") {
+      return renderLogsPage(env, url);
     }
 
     // 루트/포털 페이지는 정적 자산으로 서빙
