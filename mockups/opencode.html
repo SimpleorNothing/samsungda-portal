@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>기획 도구 모음 · 시안 A — OpenCode</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  /* ── OpenCode 스타일: 100% 모노스페이스 · 따뜻한 크림 캔버스 · ASCII 브래킷 ── */
+  :root{
+    --ink:#201d1d; --ink-deep:#0f0000; --body:#424245; --mute:#646262;
+    --ash:#9a9898; --canvas:#fdfcfc; --surface-soft:#f8f7f7; --surface-card:#f1eeee;
+    --surface-dark:#201d1d; --surface-dark-elev:#302c2c; --on-dark:#fdfcfc;
+    --hairline:rgba(15,0,0,.12); --hairline-strong:#646262; --success:#30d158; --accent:#007aff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'JetBrains Mono','IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    color:var(--ink);background:var(--canvas);line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .wrap{max-width:960px;margin:0 auto;padding:0 24px}
+
+  /* nav */
+  nav{height:56px;display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid var(--hairline)}
+  .brandmark{font-weight:700;font-size:15px;letter-spacing:1px}
+  .navlinks{display:flex;gap:18px;font-size:14px;color:var(--mute)}
+  .navlinks a{text-decoration:none}
+  .navlinks a:hover{color:var(--ink)}
+  .btn-primary{background:var(--ink);color:var(--on-dark);font-family:inherit;font-size:15px;font-weight:500;
+    border:none;border-radius:4px;padding:6px 18px;cursor:pointer;text-decoration:none}
+  .btn-primary:hover{background:var(--ink-deep)}
+
+  /* hero TUI mockup */
+  .hero{padding:64px 0 0}
+  .news{display:inline-block;background:var(--surface-dark);color:var(--on-dark);font-size:13px;
+    padding:2px 8px;border-radius:4px;margin-bottom:18px}
+  h1{font-size:38px;font-weight:700;line-height:1.4;margin-bottom:14px}
+  .lead{font-size:16px;color:var(--body);max-width:620px;margin-bottom:28px}
+  .tui{background:var(--surface-dark);color:var(--on-dark);padding:40px 28px;margin:8px 0 0}
+  .tui pre{font-family:inherit;font-size:13px;line-height:1.45;color:var(--ash);white-space:pre;overflow-x:auto}
+  .tui .wordmark{color:var(--on-dark)}
+  .promptrow{background:var(--surface-dark-elev);border-radius:4px;padding:8px 12px;margin:16px 0 12px;
+    font-size:14px;color:var(--on-dark)}
+  .promptrow .tok{color:var(--success)}
+  .keyhint{font-size:13px;color:var(--ash)}
+
+  /* sections */
+  section{padding:64px 0;border-top:1px solid var(--hairline)}
+  .label{font-size:16px;font-weight:700;margin-bottom:4px}
+  .desc{font-size:14px;color:var(--mute);margin-bottom:20px}
+  .rule{height:1px;background:var(--hairline);margin:6px 0 20px}
+
+  /* tool list — ASCII bracket rows */
+  .toollist{list-style:none}
+  .toollist li{padding:10px 0;border-bottom:1px solid var(--hairline)}
+  .toollist a{display:flex;gap:12px;text-decoration:none;align-items:baseline}
+  .toollist .mark{color:var(--ink);font-weight:700}
+  .toollist .name{font-weight:700;min-width:230px}
+  .toollist .meta{color:var(--body);font-size:15px}
+  .toollist a:hover .name{text-decoration:underline}
+  .toollist .ext{color:var(--ash);font-size:13px;margin-left:auto}
+
+  /* research */
+  .filehead{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;font-size:15px}
+  .filehead b{font-weight:700}
+  .search{font-family:inherit;font-size:14px;background:var(--surface-soft);border:1px solid var(--hairline);
+    border-radius:4px;padding:8px 12px;width:240px;color:var(--ink);outline:none}
+  .search:focus{background:var(--canvas);border-color:var(--ink)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th{text-align:left;font-weight:700;font-size:13px;color:var(--mute);padding:0 10px 10px;
+    border-bottom:1px solid var(--hairline-strong)}
+  td{padding:12px 10px;border-bottom:1px solid var(--hairline);color:var(--body)}
+  td.fname{color:var(--ink);font-weight:500}
+  td.act a{color:var(--ink);text-decoration:underline;margin-right:10px}
+  .dropzone{margin-top:18px;border:1px dashed var(--hairline-strong);border-radius:4px;padding:22px;
+    text-align:center;color:var(--mute);font-size:14px;background:var(--surface-soft)}
+  .dropzone .mark{color:var(--ink)}
+
+  footer{padding:32px 0;border-top:1px solid var(--hairline);color:var(--mute);font-size:14px;
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
+  .footlinks{display:flex;gap:18px}
+  .footlinks a{text-decoration:none}
+  @media (max-width:600px){
+    h1{font-size:28px} .navlinks{display:none}
+    .toollist .name{min-width:0}
+    .toollist a{flex-wrap:wrap}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <span class="brandmark">[ samsung_da // 기획도구 ]</span>
+    <span class="navlinks"><a href="#tools">Tools</a><a href="#research">Research</a><a href="#">Docs</a></span>
+    <a class="btn-primary" href="#tools">시작하기</a>
+  </nav>
+
+  <div class="hero">
+    <span class="news">News · 2026-05-23 업데이트</span>
+    <h1>기획 도구 모음</h1>
+    <p class="lead">자동화 도구와 조사 결과물을 한곳에서 — 터미널처럼 빠르고 단정하게, 원하는 항목을 선택하세요.</p>
+    <div class="tui">
+<pre class="wordmark">  ____  _        _   _ _   _ ___ _   _  ____
+ |  _ \| |      | \ | | \ | |_ _| \ | |/ ___|
+ | |_) | |  _   |  \| |  \| || ||  \| | |  _
+ |  __/| |_| |  | |\  | |\  || || |\  | |_| |
+ |_|   \___/    |_| \_|_| \_|___|_| \_|\____|   기획 자동화 v2.0</pre>
+      <div class="promptrow">| Build <span class="tok">기획도구</span> · Claude Opus 4.5 · samsung-da Zen</div>
+      <div class="keyhint">[tab] 도구 전환   [ctrl-p] 명령 팔레트   [↵] 실행</div>
+    </div>
+  </div>
+
+  <section id="tools">
+    <div class="label">자동화 도구 모음</div>
+    <div class="desc">기획 업무를 돕는 자동화 도구입니다.</div>
+    <div class="rule"></div>
+    <ul class="toollist">
+      <li><a href="/agent-guide"><span class="mark">[+]</span><span class="name">클로드로 워드보고서 작성하기</span><span class="meta">Claude AI 에이전트 활용법과 실전 예제 안내</span></a></li>
+      <li><a href="/report"><span class="mark">[+]</span><span class="name">보고서 자판기</span><span class="meta">지시문을 입력하면 AI가 보고서를 자동 작성</span></a></li>
+      <li><a href="/mi"><span class="mark">[+]</span><span class="name">Market Insight</span><span class="meta">시장 동향과 인사이트를 분석·정리</span></a></li>
+      <li><a href="/2030"><span class="mark">[+]</span><span class="name">2030 미래 트렌드</span><span class="meta">2030년 미래 트렌드 전망과 시나리오 분석</span></a></li>
+      <li><a href="https://samsungda.net/quickshare/"><span class="mark">[+]</span><span class="name">퀵쉐어</span><span class="meta">파일을 빠르게 공유하고 전달</span><span class="ext">↗ 외부</span></a></li>
+      <li><a href="https://space.samsungda.net/"><span class="mark">[+]</span><span class="name">My Space</span><span class="meta">누구나 쓰는 공유 작업 공간</span><span class="ext">↗ 외부</span></a></li>
+    </ul>
+  </section>
+
+  <section id="research">
+    <div class="label">조사 결과물 모음</div>
+    <div class="desc">클로드를 이용해 작성한 보고서입니다.</div>
+    <div class="rule"></div>
+    <div class="filehead"><span>파일 목록 <b>3</b>개</span><input class="search" type="search" placeholder="파일 이름 검색…"></div>
+    <table>
+      <thead><tr><th>이름</th><th>크기</th><th>업로드</th><th></th></tr></thead>
+      <tbody>
+        <tr><td class="fname">2030_미래트렌드_시나리오.docx</td><td>1.2 MB</td><td>2026-05-23 21:40</td><td class="act"><a href="#">다운로드</a><a href="#">삭제</a></td></tr>
+        <tr><td class="fname">market_insight_Q2.pdf</td><td>820 KB</td><td>2026-05-21 14:08</td><td class="act"><a href="#">다운로드</a><a href="#">삭제</a></td></tr>
+        <tr><td class="fname">보고서자판기_샘플.docx</td><td>340 KB</td><td>2026-05-19 09:55</td><td class="act"><a href="#">다운로드</a><a href="#">삭제</a></td></tr>
+      </tbody>
+    </table>
+    <div class="dropzone"><span class="mark">[ + ]</span> 파일을 끌어다 놓거나 클릭해서 업로드</div>
+  </section>
+
+  <footer>
+    <span>©2026 samsung-da · 최종 업데이트 2026-05-23 22:13</span>
+    <span class="footlinks"><a href="#">GitHub</a><a href="#">Docs</a><a href="#">Changelog</a></span>
+  </footer>
+</div>
+</body>
+</html>
