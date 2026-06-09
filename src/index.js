@@ -440,6 +440,12 @@ export default {
       return env.ASSETS.fetch(request);
     }
 
+    // 디자인 시안 미리보기(/mockups/...)도 정적 자산으로 서빙.
+    // 이 경로가 없으면 워커가 백엔드로 프록시해 "Not Found"가 떨어진다.
+    if (path === "/mockups" || path.startsWith("/mockups/")) {
+      return env.ASSETS.fetch(request);
+    }
+
     // 조사 결과물 업로드/목록/삭제 API
     if (path === "/api/research") {
       return handleResearchApi(request, env, null);
