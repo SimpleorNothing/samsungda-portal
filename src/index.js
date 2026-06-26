@@ -140,6 +140,68 @@ async function handleLogin(request, env, url) {
   return new Response(null, { status: 303, headers });
 }
 
+// ── 삭제된 페이지 안내 ───────────────────────────────────────────────────────
+// 더 이상 제공하지 않는 경로(/report, /mi, /2030, /quickshare 등)에 접근하면
+// 안내 문구를 보여준 뒤 5초 카운트다운 후 자동으로 메인(samsungda.net)으로 이동한다.
+// "바로 이동" 버튼으로 즉시 이동할 수도 있다.
+const DELETED_PAGES = new Set(["/report", "/mi", "/2030", "/quickshare"]);
+
+function deletedPage() {
+  const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>페이지가 삭제되었습니다 — 기획 도구 모음</title>
+<style>
+  :root{--bg:#fff;--surface:#f6f7f9;--text:#1a1d21;--muted:#5b6470;--border:#e6e9ee;--brand:#1257d6}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Pretendard',system-ui,-apple-system,'Segoe UI',Roboto,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:var(--text);background:var(--bg);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .box{width:100%;max-width:420px;background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:36px 30px;text-align:center}
+  h1{font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:12px}
+  .sub{color:var(--muted);font-size:15px;line-height:1.65;margin-bottom:24px}
+  .count{font-weight:700;color:var(--brand)}
+  .actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  a.btn{font:inherit;font-size:15px;font-weight:700;text-decoration:none;border-radius:10px;padding:12px 20px;cursor:pointer;transition:opacity .15s,border-color .15s,background .15s}
+  a.primary{color:#fff;background:var(--brand);border:1.5px solid var(--brand)}
+  a.primary:hover{opacity:.92}
+  a.ghost{color:var(--text);background:#fff;border:1.5px solid var(--border)}
+  a.ghost:hover{border-color:var(--brand);color:var(--brand)}
+</style>
+</head>
+<body>
+  <div class="box">
+    <h1>페이지가 삭제되었습니다</h1>
+    <p class="sub">요청하신 페이지는 더 이상 제공되지 않습니다.<br><span class="count" id="count">5</span>초 후 메인 페이지로 자동 이동합니다.</p>
+    <div class="actions">
+      <a class="btn primary" id="go" href="/">바로 이동</a>
+    </div>
+  </div>
+<script>
+  (function(){
+    var DEST = "/";
+    var n = 5;
+    var el = document.getElementById("count");
+    var timer = setInterval(function(){
+      n -= 1;
+      if (n <= 0) { clearInterval(timer); window.location.replace(DEST); return; }
+      el.textContent = n;
+    }, 1000);
+    document.getElementById("go").addEventListener("click", function(e){
+      e.preventDefault();
+      clearInterval(timer);
+      window.location.replace(DEST);
+    });
+  })();
+</script>
+</body>
+</html>`;
+  return new Response(html, {
+    status: 410,
+    headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+  });
+}
+
 async function handleResearchApi(request, env, id) {
   if (!env.RESEARCH) return json({ error: "R2 bucket not configured" }, 503);
 
@@ -438,6 +500,12 @@ export default {
     // 루트/포털 페이지는 정적 자산으로 서빙
     if (path === "/" || path === "/index.html") {
       return env.ASSETS.fetch(request);
+    }
+
+    // 삭제된 페이지(/report, /mi, /2030, /quickshare): 안내 후 메인으로 자동 이동
+    const normalized = path.replace(/\/+$/, "").toLowerCase() || "/";
+    if (request.method === "GET" && DELETED_PAGES.has(normalized)) {
+      return deletedPage();
     }
 
     // 조사 결과물 업로드/목록/삭제 API
