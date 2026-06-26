@@ -19,7 +19,7 @@ DA 기획팀의 자동화 도구와 조사 결과물을 한곳에 모은 **포�
 | 클로드로 워드보고서 작성하기 | `/agent-guide` | Claude AI 에이전트 활용법과 실전 예제 가이드 | `report-site` |
 | 보고서 자판기 | `report.samsungda.net` | 지시문을 입력하면 AI가 보고서(DOCX)를 자동 작성 | `report-site` |
 | Market Insight | `mi.samsungda.net` | 시장 동향과 인사이트 분석·정리 | `market-insight` |
-| 2030 미래 트렌드 | `2030.samsungda.net` | 2030년 미래 트렌드 전망과 시나리오 분석 | (외부 연동) |
+| 2030 미래 트렌드 | `2030.samsungda.net` | 2030년 미래 트렌드 전망과 시나리오 분석 | `2030-insight` |
 | Quick Share | `quickshare.samsungda.net` | 파일을 빠르게 공유·전달 | `QuickShare` |
 | My Space | `space.samsungda.net` | 누구나 쓰는 공유 작업 공간 | `samsungda-space` |
 
@@ -110,6 +110,6 @@ npx wrangler deploy       # wrangler.jsonc의 name 기준으로 samsungda-portal
 | 클로드로 워드보고서 작성하기 | `samsungda.net/agent-guide` | `report-site` |
 | 보고서 자판기 | `report.samsungda.net` | `report-site` |
 | Market Insight | `mi.samsungda.net` | `market-insight` |
-| 2030 미래 트렌드 | `2030.samsungda.net` | (외부 연동) |
+| 2030 미래 트렌드 | `2030.samsungda.net` | `2030-insight` |
 | Quick Share | `quickshare.samsungda.net` | `QuickShare` |
 | My Space | `space.samsungda.net` | `samsungda-space` |
