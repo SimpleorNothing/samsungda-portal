@@ -140,19 +140,19 @@ async function handleLogin(request, env, url) {
   return new Response(null, { status: 303, headers });
 }
 
-// ── 삭제된 페이지 안내 ───────────────────────────────────────────────────────
-// 더 이상 제공하지 않는 경로(/report, /mi, /2030, /quickshare 등)에 접근하면
+// ── 이동된 페이지 안내 ───────────────────────────────────────────────────────
+// 위치가 변경된 경로(/report, /mi, /2030, /quickshare 등)에 접근하면
 // 안내 문구를 보여준 뒤 5초 카운트다운 후 자동으로 메인(samsungda.net)으로 이동한다.
 // "바로 이동" 버튼으로 즉시 이동할 수도 있다.
-const DELETED_PAGES = new Set(["/report", "/mi", "/2030", "/quickshare"]);
+const MOVED_PAGES = new Set(["/report", "/mi", "/2030", "/quickshare"]);
 
-function deletedPage() {
+function movedPage() {
   const html = `<!DOCTYPE html>
 <html lang="ko">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>페이지가 삭제되었습니다 — 기획 도구 모음</title>
+<title>페이지 위치가 변경되었습니다 — 기획 도구 모음</title>
 <style>
   :root{--bg:#fff;--surface:#f6f7f9;--text:#1a1d21;--muted:#5b6470;--border:#e6e9ee;--brand:#1257d6}
   *{box-sizing:border-box;margin:0;padding:0}
@@ -171,8 +171,8 @@ function deletedPage() {
 </head>
 <body>
   <div class="box">
-    <h1>페이지가 삭제되었습니다</h1>
-    <p class="sub">요청하신 페이지는 더 이상 제공되지 않습니다.<br><span class="count" id="count">5</span>초 후 메인 페이지로 자동 이동합니다.</p>
+    <h1>페이지 위치가 변경되었습니다</h1>
+    <p class="sub">요청하신 페이지의 위치가 변경되었습니다.<br><span class="count" id="count">5</span>초 후 메인 페이지로 자동 이동합니다.</p>
     <div class="actions">
       <a class="btn primary" id="go" href="/">바로 이동</a>
     </div>
@@ -197,7 +197,7 @@ function deletedPage() {
 </body>
 </html>`;
   return new Response(html, {
-    status: 410,
+    status: 200,
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
   });
 }
@@ -502,10 +502,10 @@ export default {
       return env.ASSETS.fetch(request);
     }
 
-    // 삭제된 페이지(/report, /mi, /2030, /quickshare): 안내 후 메인으로 자동 이동
+    // 위치가 변경된 페이지(/report, /mi, /2030, /quickshare): 안내 후 메인으로 자동 이동
     const normalized = path.replace(/\/+$/, "").toLowerCase() || "/";
-    if (request.method === "GET" && DELETED_PAGES.has(normalized)) {
-      return deletedPage();
+    if (request.method === "GET" && MOVED_PAGES.has(normalized)) {
+      return movedPage();
     }
 
     // 조사 결과물 업로드/목록/삭제 API
