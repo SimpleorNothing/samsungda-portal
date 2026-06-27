@@ -1,5 +1,5 @@
 /*! update-badge.js — 도구모음 공용 업데이트 배지
- * 페이지 하단 footer(#ub-footer)에 "update : YYYY.M.D HH:MM" 표시. 클릭 시 최근 변경 내역 패널.
+ * 페이지 하단 footer(#ub-footer)에 "update : YYYY.M.D" 표시. 클릭 시 최근 변경 내역 패널.
  * 데이터 우선순위: window.__UPDATE_BADGE_DATA(인라인) → <meta app-updated> → 같은 출처의 version.json.
  * 의존성 없음 · 토큰 스타일 인라인 주입 · 어느 스택에 붙여도 동작.
  *
@@ -24,10 +24,9 @@
       var d = new Date(iso);
       if (isNaN(d)) return iso;
       var p = new Intl.DateTimeFormat('ko-KR', {
-        timeZone: 'Asia/Seoul', year: 'numeric', month: 'numeric', day: 'numeric',
-        hour: '2-digit', minute: '2-digit', hour12: false
+        timeZone: 'Asia/Seoul', year: 'numeric', month: 'numeric', day: 'numeric'
       }).formatToParts(d).reduce(function (o, x) { o[x.type] = x.value; return o; }, {});
-      return p.year + '.' + p.month + '.' + p.day + ' ' + p.hour + ':' + p.minute;
+      return p.year + '.' + p.month + '.' + p.day;
     } catch (e) { return iso; }
   }
 
@@ -40,7 +39,6 @@
 
   function mount(data) {
     if (!data || !data.updated_at) return;
-    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     var st = document.createElement('style');
     st.textContent =
@@ -48,10 +46,8 @@
       '#ub-btn{display:inline-flex;align-items:center;gap:7px;padding:0;border:none;background:transparent;color:' + T.muted + ';font-size:13px;line-height:1;cursor:pointer}' +
       '#ub-btn:hover{color:' + T.text + '}' +
       '#ub-btn:focus-visible{outline:2px solid ' + T.brand + ';outline-offset:2px;border-radius:4px}' +
-      '#ub-dot{width:7px;height:7px;border-radius:50%;background:' + T.brand + ';flex:0 0 auto' + (reduce ? '' : ';animation:ub-pulse 2.4s ease-in-out infinite') + '}' +
       '#ub-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
       '#ub-txt b{color:' + T.text + ';font-weight:600}' +
-      '@keyframes ub-pulse{0%,100%{box-shadow:0 0 0 0 rgba(18,87,214,.45)}50%{box-shadow:0 0 0 4px rgba(18,87,214,0)}}' +
       '#ub-panel{position:absolute;left:0;bottom:calc(100% + 8px);width:320px;max-width:78vw;max-height:50vh;overflow:auto;background:' + T.bg + ';border:1px solid ' + T.border + ';border-radius:14px;box-shadow:0 12px 28px rgba(16,22,34,.16);padding:14px 14px 10px;animation:ub-rise .14s ease-out;z-index:9999}' +
       '#ub-panel[hidden]{display:none}' +
       '@keyframes ub-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}' +
@@ -67,13 +63,12 @@
     var root = el('div'); root.id = 'ub-root';
     var btn = el('button'); btn.id = 'ub-btn'; btn.type = 'button';
     btn.setAttribute('aria-expanded', 'false');
-    var dot = el('span'); dot.id = 'ub-dot';
     var txt = el('span'); txt.id = 'ub-txt';
     txt.appendChild(document.createTextNode('update : '));
     var b = el('b', null, fmt(data.updated_at));
     txt.appendChild(b);
     if (data.summary) txt.appendChild(document.createTextNode(' (' + data.summary + ')'));
-    btn.appendChild(dot); btn.appendChild(txt);
+    btn.appendChild(txt);
 
     var panel = el('div'); panel.id = 'ub-panel'; panel.hidden = true;
     panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', '업데이트 내역');
