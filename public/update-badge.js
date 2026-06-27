@@ -47,7 +47,7 @@
       '#ub-btn:hover{color:' + T.text + '}' +
       '#ub-btn:focus-visible{outline:2px solid ' + T.brand + ';outline-offset:2px;border-radius:4px}' +
       '#ub-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
-      '#ub-txt b{color:' + T.text + ';font-weight:600}' +
+      '#ub-txt b{font-weight:400}' +
       '#ub-panel{position:absolute;left:0;bottom:calc(100% + 8px);width:320px;max-width:78vw;max-height:50vh;overflow:auto;background:' + T.bg + ';border:1px solid ' + T.border + ';border-radius:14px;box-shadow:0 12px 28px rgba(16,22,34,.16);padding:14px 14px 10px;animation:ub-rise .14s ease-out;z-index:9999}' +
       '#ub-panel[hidden]{display:none}' +
       '@keyframes ub-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}' +

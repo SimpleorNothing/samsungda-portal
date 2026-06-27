@@ -33,7 +33,7 @@
   .grid.is-free{display:block;position:relative}
   .grid.is-free .card{position:absolute;margin:0;cursor:grab}
   .grid.is-free .card.is-dragging{z-index:1000;cursor:grabbing;border-color:var(--brand);box-shadow:0 14px 34px rgba(18,87,214,.22)}
-  .updated{margin-top:8px;padding-top:20px;border-top:1px solid var(--border);text-align:left;color:var(--muted);font-size:13px}
+  .updated{margin-top:8px;padding-top:20px;text-align:left;color:var(--muted);font-size:13px}
   @media (max-width:600px){
     .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   }
@@ -262,6 +262,20 @@
   window.addEventListener('drop', function(e){ if(e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) e.preventDefault(); });
 })();
 </script>
-<script defer src="/update-badge.js" data-src="/version.json"></script>
+<script>
+  // 업데이트 배지: 배포 시각(meta app-updated)을 머리글로 쓰고, 클릭 시 보여줄 변경 내역을 간략히 제공
+  (function () {
+    var m = document.querySelector('meta[name="app-updated"]');
+    var at = (m && m.content) || '2026-06-28';
+    window.__UPDATE_BADGE_DATA = {
+      updated_at: at,
+      log: [
+        { at: at, summary: 'update 배지 구분선 제거 · 날짜 일반 글꼴 처리, 클릭 시 변경 내역 표시 추가' },
+        { at: '2026-06-28', summary: 'update 배지 점 삭제 · 연월일만 표시, 전체 Pretendard 폰트 적용, NEW 배지 위치 정리' }
+      ]
+    };
+  })();
+</script>
+<script defer src="/update-badge.js"></script>
 </body>
 </html>
