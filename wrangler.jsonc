@@ -14,7 +14,10 @@
   // (런타임에 git이 없는 Worker 환경에서도 정확한 최신 배포 시각을 보장.)
   "version_metadata": { "binding": "CF_VERSION_METADATA" },
   "vars": {
-    "BACKEND_UPSTREAM": "https://web-production-aeaba.up.railway.app"
+    "BACKEND_UPSTREAM": "https://web-production-aeaba.up.railway.app",
+    // 산하 도구 직접 프록시 upstream — 포털이 report-site를 거치지 않고 곧장 전달한다.
+    "US10Y_UPSTREAM": "https://us10y-production.up.railway.app",
+    "WEBAUTO_UPSTREAM": "https://website-automation.cw120-park.workers.dev"
   },
   "r2_buckets": [
     { "binding": "RESEARCH", "bucket_name": "samsungda-research" }
