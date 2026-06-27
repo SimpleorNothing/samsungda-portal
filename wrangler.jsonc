@@ -10,6 +10,9 @@
     // directly and the Worker (and its gate) never runs for the home page.
     "run_worker_first": true
   },
+  // 배포 시각/버전을 런타임에서 읽어 "마지막 업데이트" 배지에 사용한다.
+  // (런타임에 git이 없는 Worker 환경에서도 정확한 최신 배포 시각을 보장.)
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
   "vars": {
     "BACKEND_UPSTREAM": "https://web-production-aeaba.up.railway.app"
   },

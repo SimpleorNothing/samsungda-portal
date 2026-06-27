@@ -498,8 +498,26 @@ export default {
     }
 
     // 루트/포털 페이지는 정적 자산으로 서빙
+    // + 왼쪽 하단 "업데이트" 배지용으로 현재 배포 시각/메모를 <head>에 주입한다.
+    //   (런타임에 git이 없는 Worker라 CF 배포 메타데이터를 단일 진실원으로 사용 → "반영 안 됨" 차단)
     if (path === "/" || path === "/index.html") {
-      return env.ASSETS.fetch(request);
+      const assetRes = await env.ASSETS.fetch(request);
+      const vm = env.CF_VERSION_METADATA;
+      const ct = assetRes.headers.get("content-type") || "";
+      if (vm && vm.timestamp && ct.includes("text/html")) {
+        const ts = escAttr(vm.timestamp);
+        const note = vm.tag ? escAttr(vm.tag) : "";
+        return new HTMLRewriter()
+          .on("head", {
+            element(el) {
+              el.append(`\n<meta name="app-updated" content="${ts}">`, { html: true });
+              if (note) el.append(`\n<meta name="app-update-note" content="${note}">`, { html: true });
+              el.append(`\n<script defer src="/update-badge.js"></script>`, { html: true });
+            },
+          })
+          .transform(assetRes);
+      }
+      return assetRes;
     }
 
     // 위치가 변경된 페이지(/report, /mi, /2030, /quickshare): 안내 후 메인으로 자동 이동
@@ -521,6 +539,11 @@ export default {
       const id = decodeURIComponent(path.slice("/research/".length));
       if (!id) return new Response("Not found", { status: 404, headers: TEXT });
       return serveResearchFile(env, id);
+    }
+
+    // 업데이트 배지 스크립트(정적 자산)
+    if (path === "/update-badge.js") {
+      return env.ASSETS.fetch(request);
     }
 
     // 그 외 모든 경로는 백엔드(Railway)로 경로 그대로 프록시
