@@ -77,6 +77,15 @@ function safeNextPath(next) {
   return typeof next === "string" && /^\/(?!\/)/.test(next) ? next : "/";
 }
 
+// samsungda.net 영역에서는 서브도메인 간 세션 공유를 위해 Domain=.samsungda.net 으로
+// 쿠키를 발급한다(예: agentguide.samsungda.net 도 같은 로그인 세션을 인식). 로컬
+// (localhost)·*.workers.dev 미리보기에서는 Domain을 생략해 쿠키 거부를 피한다.
+function cookieDomainAttr(hostname) {
+  return hostname === "samsungda.net" || hostname.endsWith(".samsungda.net")
+    ? "; Domain=.samsungda.net"
+    : "";
+}
+
 function escAttr(s) {
   return String(s).replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 }
@@ -135,7 +144,7 @@ async function handleLogin(request, env, url) {
   const headers = new Headers({ Location: next });
   headers.append(
     "Set-Cookie",
-    `${AUTH_COOKIE}=${await sessionToken(env)}; Path=/; Max-Age=${AUTH_MAX_AGE}; HttpOnly; SameSite=Lax${secure}`
+    `${AUTH_COOKIE}=${await sessionToken(env)}; Path=/; Max-Age=${AUTH_MAX_AGE}; HttpOnly; SameSite=Lax${cookieDomainAttr(url.hostname)}${secure}`
   );
   return new Response(null, { status: 303, headers });
 }
