@@ -24,7 +24,10 @@
   .card h3 .tico{flex:0 0 auto;width:24px;height:24px;color:var(--brand);display:inline-flex;align-items:center;justify-content:center}
   .card h3 .tico svg{width:24px;height:24px;display:block}
   .card p{font-size:13px;color:var(--muted);line-height:1.65}
-  .card{user-select:none;-webkit-user-select:none;-webkit-user-drag:none}
+  .card{user-select:none;-webkit-user-select:none;-webkit-user-drag:none;position:relative}
+  .badge-new{display:none;position:absolute;top:14px;right:14px;font-size:10px;font-weight:700;color:#fff;background:#ff3b30;border-radius:6px;padding:2px 7px;letter-spacing:.5px;line-height:1.5;animation:pulse-new 2s ease-in-out infinite;pointer-events:none}
+  .badge-new.visible{display:inline-block}
+  @keyframes pulse-new{0%,100%{opacity:1}50%{opacity:.6}}
   /* 조사 결과물 목록(표) */
   .filelist{margin-top:14px}
   .filelist-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
@@ -113,11 +116,13 @@
         <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.6" width="12" height="18.8" rx="2.2"/><rect x="8" y="5" width="8" height="6" rx="1"/><rect x="8.2" y="16.3" width="7.6" height="2.6" rx=".7"/></g><circle cx="9.2" cy="13.8" r=".75" fill="currentColor"/><circle cx="11.4" cy="13.8" r=".75" fill="currentColor"/><circle cx="13.6" cy="13.8" r=".75" fill="currentColor"/></svg></span>보고서 자판기</h3>
         <p>지시문을 입력하면 AI가 보고서를 자동으로 작성합니다.</p>
       </a>
-      <a class="card" href="https://mi.samsungda.net/" target="_blank" rel="noopener noreferrer">
+      <a class="card" href="https://mi.samsungda.net/" target="_blank" rel="noopener noreferrer" data-card-id="mi" data-new-check="daily">
+        <span class="badge-new">NEW</span>
         <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v15a1 1 0 0 0 1 1h15"/><path d="M7.5 14.6 10.6 11l2.4 2 4.6-5.9"/><path d="M15.2 7h2.6v2.6"/></g></svg></span>Market Insight</h3>
         <p>시장 동향과 인사이트를 분석·정리합니다.</p>
       </a>
-      <a class="card" href="https://2030.samsungda.net/" target="_blank" rel="noopener noreferrer">
+      <a class="card" href="https://2030.samsungda.net/" target="_blank" rel="noopener noreferrer" data-card-id="2030" data-new-check="daily">
+        <span class="badge-new">NEW</span>
         <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c2.5 1.7 3.8 4.5 3.8 7.7 0 1.8-.5 3.4-1.3 4.4H9.5C8.7 14.1 8.2 12.5 8.2 10.7 8.2 7.5 9.5 4.7 12 3Z"/><circle cx="12" cy="9.3" r="1.5"/><path d="M9.5 15.2 7.5 18.5l2.7-1.1M14.5 15.2l2 3.3-2.7-1.1"/><path d="M10.9 18.8c.4 1 1.8 1 2.2 0"/></g></svg></span>2030 미래 트렌드</h3>
         <p>미래 트렌드를 전망하고 시나리오를 분석합니다.</p>
       </a>
@@ -612,6 +617,25 @@
     load();
   }
   initResearch();
+
+  // NEW 배지: 데일리 콘텐츠 미확인 카드에 표시
+  (function(){
+    var LS = 'card_visited_';
+    function today(){
+      var d = new Date();
+      return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    }
+    document.querySelectorAll('.card[data-new-check="daily"]').forEach(function(card){
+      var id = card.dataset.cardId;
+      if(localStorage.getItem(LS+id) !== today()){
+        card.querySelector('.badge-new').classList.add('visible');
+      }
+      card.addEventListener('click', function(){
+        localStorage.setItem(LS+id, today());
+        card.querySelector('.badge-new').classList.remove('visible');
+      });
+    });
+  })();
 
   // 파일을 페이지 밖 영역에 떨어뜨렸을 때 브라우저가 파일을 여는 기본 동작 방지
   window.addEventListener('dragover', function(e){ if(e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') > -1) e.preventDefault(); });
