@@ -37,7 +37,9 @@ DA 기획팀의 자동화 도구와 조사 결과물을 한곳에 모은 **포�
 | `/api/research` | GET·POST | 조사 결과물 목록 / 업로드 |
 | `/api/research/<id>` | DELETE | 조사 결과물 삭제(파일별 비밀번호) |
 | `/research/<id>` | GET | 업로드된 결과물 열람(샌드박스 CSP 격리) |
-| 그 외 전체 | * | `BACKEND_UPSTREAM`(Railway)으로 경로 그대로 프록시 |
+| `/us10y`, `/us10y/*` | GET·HEAD | `US10Y_UPSTREAM`(Railway us10y)으로 직접 프록시 — report-site 경유 없음 |
+| `/webauto`, `/webauto/*` | * | `WEBAUTO_UPSTREAM`(website-automation Worker `/admin/*`)으로 직접 프록시 — report-site 경유 없음 |
+| 그 외 전체 | * | `BACKEND_UPSTREAM`(Railway, `report-site`)으로 경로 그대로 프록시 |
 
 ---
 
@@ -81,6 +83,8 @@ samsungda-portal/
 |------|------|------|
 | `SITE_PASSWORD` | Secret | 사이트 접근 비밀번호(게이트) |
 | `BACKEND_UPSTREAM` | Var | 백엔드(Railway) 주소 — 미지정 경로 프록시 대상 |
+| `US10Y_UPSTREAM` | Var | `/us10y` 직접 프록시 대상(Railway us10y) |
+| `WEBAUTO_UPSTREAM` | Var | `/webauto` 직접 프록시 대상(website-automation Worker) |
 | `RESEARCH` | R2 | 조사 결과물 저장(`samsungda-research`) |
 | `ACCESS_LOG` | D1 | 접속 로그(선택) |
 
