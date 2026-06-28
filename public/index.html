@@ -181,16 +181,18 @@
     }
     function names(ids){ return ids.map(function(k){ return '<b>'+LABEL[k]+'</b>'; }).join(' · '); }
     function noteFor(id){
-      var lines = [];
-      if(USES[id]){
-        var lastS = LABEL[USES[id][USES[id].length-1]];
-        lines.push('<b>'+LABEL[id]+'</b>'+josa(LABEL[id],'은','는')+' '+names(USES[id])+josa(lastS,'을','를')+' 활용합니다.');
+      var u = USES[id], b = USED_BY[id];
+      if(!u && !b) return null;
+      // 한 줄로 결합: 활용하는 것(능동) + 활용되는 곳(수동)
+      var out = '<b>'+LABEL[id]+'</b>'+josa(LABEL[id],'은','는')+' ';
+      if(u){
+        var lastS = LABEL[u[u.length-1]];
+        out += names(u)+josa(lastS,'을','를')+' 활용'+(b ? '하고, ' : '합니다.');
       }
-      if(USED_BY[id]){
-        var lastC = LABEL[USED_BY[id][USED_BY[id].length-1]];
-        lines.push('<b>'+LABEL[id]+'</b>'+josa(LABEL[id],'을','를')+' '+names(USED_BY[id])+josa(lastC,'이','가')+' 활용합니다.');
+      if(b){
+        out += names(b)+'에 활용됩니다.';
       }
-      return lines.length ? lines.join('<br>') : null;
+      return out;
     }
     Array.prototype.forEach.call(pipe.querySelectorAll('.card[data-id]'), function(card){
       card.addEventListener('mouseenter', function(){
@@ -217,7 +219,7 @@
     window.__UPDATE_BADGE_DATA = {
       updated_at: at,
       log: [
-        { at: at, summary: "도구 설명 문구 정비, 워드보고서 카드 제목 간결화" }
+        { at: at, summary: "hover 활용 관계 안내를 한 줄로 통합" }
       ]
     };
   })();
