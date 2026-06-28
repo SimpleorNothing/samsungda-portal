@@ -49,7 +49,7 @@
   .pipe .card{transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease}
   .pipe .card.is-source,.pipe .card.is-source:hover{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand) inset,0 8px 24px -10px rgba(18,87,214,.5);transform:translateY(-2px)}
   /* 데이터 활용 관계 안내 (상단) */
-  .relnote{min-height:20px;margin:0 0 26px;font-size:13px;color:var(--muted);transition:color .2s ease}
+  .relnote{min-height:20px;margin:0 0 26px;font-size:13px;line-height:1.55;color:var(--muted);transition:color .2s ease}
   .relnote b{color:var(--brand);font-weight:700}
   /* 데스크톱 자유 배치(그리드 칸 스냅) 모드 */
   .grid.is-free{display:block;position:relative}
@@ -161,15 +161,36 @@
     if(!pipe) return;
     var relnote = document.getElementById('relnote');
     var DEFAULT = relnote ? relnote.textContent : '';
-    var LABEL = { mi:'Market Sensing', '2030':'2030 미래 전망' };
+    var LABEL = { mi:'Market Sensing', '2030':'2030 미래 전망', idea:'아이디어 자판기', report:'보고서 자판기', guide:'워드보고서 가이드', space:'My Space', quickshare:'Quick Share' };
+    // 활용 관계(시스템 설정값): consumer 가 sources 를 활용한다.
     var USES = {
-      mi: ['2030 미래 전망', '아이디어 자판기'],
-      '2030': ['아이디어 자판기']
+      '2030': ['mi'],
+      idea:   ['mi','2030'],
+      report: ['guide']
     };
+    // 역방향(소스 → 활용처) 자동 생성
+    var USED_BY = {};
+    Object.keys(USES).forEach(function(c){
+      USES[c].forEach(function(s){ (USED_BY[s] = USED_BY[s] || []).push(c); });
+    });
+    // 한글 받침에 따른 조사 선택(영문 등은 받침 있음으로 처리)
+    function josa(name, withB, woB){
+      var ch = name.charCodeAt(name.length-1);
+      var hasB = (ch>=0xAC00 && ch<=0xD7A3) ? ((ch-0xAC00)%28!==0) : true;
+      return hasB ? withB : woB;
+    }
+    function names(ids){ return ids.map(function(k){ return '<b>'+LABEL[k]+'</b>'; }).join(' · '); }
     function noteFor(id){
-      var u = USES[id];
-      if(!u) return null;
-      return '<b>'+LABEL[id]+'</b>의 정보를 ' + u.map(function(x){ return '<b>'+x+'</b>'; }).join(' · ') + '가 활용합니다.';
+      var lines = [];
+      if(USES[id]){
+        var lastS = LABEL[USES[id][USES[id].length-1]];
+        lines.push('<b>'+LABEL[id]+'</b>'+josa(LABEL[id],'은','는')+' '+names(USES[id])+josa(lastS,'을','를')+' 활용합니다.');
+      }
+      if(USED_BY[id]){
+        var lastC = LABEL[USED_BY[id][USED_BY[id].length-1]];
+        lines.push('<b>'+LABEL[id]+'</b>'+josa(LABEL[id],'을','를')+' '+names(USED_BY[id])+josa(lastC,'이','가')+' 활용합니다.');
+      }
+      return lines.length ? lines.join('<br>') : null;
     }
     Array.prototype.forEach.call(pipe.querySelectorAll('.card[data-id]'), function(card){
       card.addEventListener('mouseenter', function(){
@@ -196,7 +217,7 @@
     window.__UPDATE_BADGE_DATA = {
       updated_at: at,
       log: [
-        { at: at, summary: "카테고리·도구명 정비(시장 센싱·전망 / 인사이트 도출·정리 / 결과 공유), hover 시 데이터 활용 관계 안내" }
+        { at: at, summary: "hover 활용 관계 양방향 확장(아이디어 자판기→MS·2030, 보고서 자판기→워드보고서 가이드)" }
       ]
     };
   })();
