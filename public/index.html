@@ -45,9 +45,10 @@
   .badge-new{display:none;position:absolute;top:12px;right:12px;font-size:8px;font-weight:700;color:#fff;background:#0071e3;border-radius:5px;padding:1.6px 5.6px;letter-spacing:.5px;line-height:1.5;animation:pulse-new 2s ease-in-out infinite;pointer-events:none}
   .badge-new.visible{display:inline-block}
   @keyframes pulse-new{0%,100%{opacity:1}50%{opacity:.65}}
-  /* ── hover: 올린 카드만 강조 (나머지 카드는 그대로) ── */
+  /* ── hover: 올린 카드 강조 + 연관 카드 얇은 파란 테두리 ── */
   .pipe .card{transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease}
   .pipe .card.is-source,.pipe .card.is-source:hover{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand) inset,0 8px 24px -10px rgba(18,87,214,.5);transform:translateY(-2px)}
+  .pipe .card.is-rel{border-color:var(--brand)}
   /* 데이터 활용 관계 안내 (상단) */
   .relnote{min-height:20px;margin:0 0 26px;font-size:13px;line-height:1.55;color:var(--muted);transition:color .2s ease}
   .relnote b{color:var(--brand);font-weight:700}
@@ -154,8 +155,8 @@
     });
   })();
 
-  // hover: 카드에 마우스를 올리면 그 카드만 강조하고, 그 정보를 활용하는 도구를 상단에 안내한다.
-  // 활용 관계는 시스템상 설정된 것만 표시(데스크톱 hover 전용, 실제 링크 클릭은 그대로).
+  // hover: 카드에 마우스를 올리면 그 카드를 강조하고, 연관 도구 카드에 얇은 파란 테두리를 입히며,
+  // 활용 관계를 상단에 한 줄로 안내한다. (데스크톱 hover 전용, 실제 링크 클릭은 그대로)
   (function(){
     var pipe = document.querySelector('.pipe');
     if(!pipe) return;
@@ -196,11 +197,18 @@
     }
     Array.prototype.forEach.call(pipe.querySelectorAll('.card[data-id]'), function(card){
       card.addEventListener('mouseenter', function(){
+        var id = card.dataset.id;
         card.classList.add('is-source');
-        if(relnote){ var t = noteFor(card.dataset.id); if(t) relnote.innerHTML = t; }
+        // 연관 도구(활용처 + 피활용처)에 얇은 파란 테두리
+        (USES[id]||[]).concat(USED_BY[id]||[]).forEach(function(r){
+          var t = pipe.querySelector('.card[data-id="'+r+'"]');
+          if(t) t.classList.add('is-rel');
+        });
+        if(relnote){ var note = noteFor(id); if(note) relnote.innerHTML = note; }
       });
       card.addEventListener('mouseleave', function(){
         card.classList.remove('is-source');
+        Array.prototype.forEach.call(pipe.querySelectorAll('.card.is-rel'), function(x){ x.classList.remove('is-rel'); });
         if(relnote) relnote.textContent = DEFAULT;
       });
     });
@@ -219,7 +227,7 @@
     window.__UPDATE_BADGE_DATA = {
       updated_at: at,
       log: [
-        { at: at, summary: "hover 활용 관계 안내를 한 줄로 통합" }
+        { at: at, summary: "hover 시 연관 도구 카드를 얇은 파란 테두리로 함께 표시" }
       ]
     };
   })();
