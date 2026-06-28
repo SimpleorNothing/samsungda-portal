@@ -45,6 +45,26 @@
   .badge-new{display:none;position:absolute;top:12px;right:12px;font-size:8px;font-weight:700;color:#fff;background:#0071e3;border-radius:5px;padding:1.6px 5.6px;letter-spacing:.5px;line-height:1.5;animation:pulse-new 2s ease-in-out infinite;pointer-events:none}
   .badge-new.visible{display:inline-block}
   @keyframes pulse-new{0%,100%{opacity:1}50%{opacity:.65}}
+  /* ── hover 연관 강조 (데이터 흐름 기준) ── */
+  .pipe .card{transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease,background .2s ease}
+  .pipe .card h3,.pipe .card p{transition:opacity .2s ease}
+  .pipe .flow{transition:opacity .2s ease}
+  /* 무관 카드: 보더·배경을 가라앉히고 본문 텍스트만 흐림 (NEW 배지는 예외 — h3/p 밖이라 그대로 선명) */
+  .pipe.has-focus .card:not(.is-source):not(.is-rel){border-color:var(--border);box-shadow:none;background:var(--bg)}
+  .pipe.has-focus .card:not(.is-source):not(.is-rel) h3,
+  .pipe.has-focus .card:not(.is-source):not(.is-rel) p{opacity:.32}
+  /* 연관 카드: brand 보더 + 살짝 lift */
+  .pipe.has-focus .card.is-rel{border-color:var(--brand);box-shadow:0 8px 24px -10px rgba(18,87,214,.5);transform:translateY(-2px)}
+  /* source 카드: brand inset ring */
+  .pipe.has-focus .card.is-source,
+  .pipe.has-focus .card.is-source:hover{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand) inset,0 8px 24px -10px rgba(18,87,214,.5)}
+  /* 흐름 화살표: 연결된 단계의 화살표만 켜짐 */
+  .pipe.has-focus .flow{opacity:.2}
+  .pipe.has-focus .flow.is-on{opacity:1}
+  /* 관계 캡션 (한 줄) */
+  .relnote{min-height:19px;margin:18px 0 0;font-size:12.5px;color:var(--muted);text-align:center;opacity:0;transition:opacity .2s ease}
+  .relnote.show{opacity:1}
+  .relnote b{color:var(--brand);font-weight:700}
   /* 데스크톱 자유 배치(그리드 칸 스냅) 모드 */
   .grid.is-free{display:block;position:relative}
   .grid.is-free .card{position:absolute;margin:0;cursor:grab}
@@ -76,47 +96,49 @@
     <div class="pipe">
       <div class="stage">
         <div class="stage-head"><span class="stage-no">1</span><span class="stage-tt">인사이트 센싱</span><span class="stage-sub">Daily 입력</span></div>
-        <a class="card" href="https://mi.samsungda.net/" target="_blank" rel="noopener noreferrer" data-card-id="mi" data-new-check="daily">
+        <a class="card" href="https://mi.samsungda.net/" target="_blank" rel="noopener noreferrer" data-card-id="mi" data-new-check="daily" data-id="mi">
         <span class="badge-new">NEW</span>
         <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v15a1 1 0 0 0 1 1h15"/><path d="M7.5 14.6 10.6 11l2.4 2 4.6-5.9"/><path d="M15.2 7h2.6v2.6"/></g></svg></span>Market Insight</h3>
         <p>시장 동향을 Daily로 센싱합니다.</p>
       </a>
-        <a class="card" href="https://2030.samsungda.net/" target="_blank" rel="noopener noreferrer" data-card-id="2030" data-new-check="daily">
+        <a class="card" href="https://2030.samsungda.net/" target="_blank" rel="noopener noreferrer" data-card-id="2030" data-new-check="daily" data-id="2030">
         <span class="badge-new">NEW</span>
         <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c2.5 1.7 3.8 4.5 3.8 7.7 0 1.8-.5 3.4-1.3 4.4H9.5C8.7 14.1 8.2 12.5 8.2 10.7 8.2 7.5 9.5 4.7 12 3Z"/><circle cx="12" cy="9.3" r="1.5"/><path d="M9.5 15.2 7.5 18.5l2.7-1.1M14.5 15.2l2 3.3-2.7-1.1"/><path d="M10.9 18.8c.4 1 1.8 1 2.2 0"/></g></svg></span>2030 미래 트렌드</h3>
         <p>미래 트렌드를 전망하고 시나리오를 분석합니다.</p>
       </a>
       </div>
-      <div class="flow"><span class="flow-lbl">활용</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></div>
+      <div class="flow" data-flow="12"><span class="flow-lbl">활용</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></div>
       <div class="stage">
         <div class="stage-head"><span class="stage-no">2</span><span class="stage-tt">발상 · 생성</span><span class="stage-sub">AI 생성</span></div>
-        <a class="card" href="https://idea.samsungda.net/" target="_blank" rel="noopener noreferrer">
+        <a class="card" href="https://idea.samsungda.net/" target="_blank" rel="noopener noreferrer" data-id="idea">
         <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0-3.6 10.8c.55.42.9 1 .9 1.7v.5h5.4v-.5c0-.7.35-1.28.9-1.7A6 6 0 0 0 12 3Z"/><path d="M9.6 19h4.8M10.4 21.4h3.2"/></g></svg></span>아이디어 자판기</h3>
         <p>키워드를 입력하면 AI가 새로운 아이디어를 자동으로 제안합니다.</p>
       </a>
-        <a class="card" href="https://report.samsungda.net/" target="_blank" rel="noopener noreferrer">
+        <a class="card" href="https://report.samsungda.net/" target="_blank" rel="noopener noreferrer" data-id="report">
         <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.6" width="12" height="18.8" rx="2.2"/><rect x="8" y="5" width="8" height="6" rx="1"/><rect x="8.2" y="16.3" width="7.6" height="2.6" rx=".7"/></g><circle cx="9.2" cy="13.8" r=".75" fill="currentColor"/><circle cx="11.4" cy="13.8" r=".75" fill="currentColor"/><circle cx="13.6" cy="13.8" r=".75" fill="currentColor"/></svg></span>보고서 자판기</h3>
         <p>지시문을 입력하면 AI가 보고서를 자동으로 작성합니다.</p>
       </a>
-        <a class="card" href="https://agentguide.samsungda.net" target="_blank" rel="noopener noreferrer">
+        <a class="card" href="https://agentguide.samsungda.net" target="_blank" rel="noopener noreferrer" data-id="guide">
         <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3.5" width="11.5" height="17" rx="2"/><path d="M9 9.5h6M9 12.5h6M9 15.5h4"/></g><path d="M18.3 2.4c.3 1.1.85 1.65 1.95 1.95-1.1.3-1.65.85-1.95 1.95-.3-1.1-.85-1.65-1.95-1.95 1.1-.3 1.65-.85 1.95-1.95Z" fill="currentColor"/></svg></span>클로드로 워드보고서 작성하기</h3>
         <p>Claude AI 에이전트 활용법과 실전 예제를 안내합니다.</p>
       </a>
       </div>
-      <div class="flow"><span class="flow-lbl">배포</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></div>
+      <div class="flow" data-flow="23"><span class="flow-lbl">배포</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></div>
       <div class="stage">
         <div class="stage-head"><span class="stage-no">3</span><span class="stage-tt">공유 · 확산</span><span class="stage-sub">협업</span></div>
-        <a class="card" href="https://space.samsungda.net/" target="_blank" rel="noopener noreferrer">
+        <a class="card" href="https://space.samsungda.net/" target="_blank" rel="noopener noreferrer" data-id="space">
         <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7"><rect x="3.8" y="3.8" width="7" height="7" rx="1.6"/><rect x="13.2" y="3.8" width="7" height="7" rx="1.6"/><rect x="3.8" y="13.2" width="7" height="7" rx="1.6"/><rect x="13.2" y="13.2" width="7" height="7" rx="1.6"/></g></svg></span>My Space</h3>
         <p>누구나 쓰는 공유 작업 공간입니다.</p>
       </a>
-        <a class="card" href="https://quickshare.samsungda.net/" target="_blank" rel="noopener noreferrer">
+        <a class="card" href="https://quickshare.samsungda.net/" target="_blank" rel="noopener noreferrer" data-id="quickshare">
         <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="12" r="2.3"/><circle cx="16.5" cy="6" r="2.3"/><circle cx="16.5" cy="18" r="2.3"/><path d="m9 10.9 5.4-3.5M9 13.1l5.4 3.5"/></g></svg></span>Quick Share</h3>
         <p>텍스트와 파일을 공유할 수 있습니다.</p>
       </a>
       </div>
     </div>
   </section>
+
+  <div class="relnote" id="relnote" aria-live="polite"></div>
 
   <div class="foot-row">
     <footer class="updated" id="ub-footer">update : 2026.6.28</footer>
@@ -143,6 +165,63 @@
         localStorage.setItem(LS+id, today());
         card.querySelector('.badge-new').classList.remove('visible');
       });
+    });
+  })();
+
+  // hover 연관 강조: 카드에 마우스를 올리면 데이터로 연결된 도구만 부각하고 흐름 화살표를 켠다.
+  // (실제 링크 카드라 click 은 건드리지 않음 — 강조만 얹는다. 데스크톱 hover 전용.)
+  (function(){
+    var pipe = document.querySelector('.pipe');
+    if(!pipe) return;
+    var relnote = document.getElementById('relnote');
+    var STAGE = {mi:1,'2030':1,idea:2,report:2,guide:2,space:3,quickshare:3};
+    // 데이터 흐름 기반 연관(양방향)
+    var REL = {
+      mi:['idea','report'],
+      '2030':['idea','report'],
+      idea:['mi','2030','space','quickshare'],
+      report:['mi','2030','guide','space','quickshare'],
+      guide:['report'],
+      space:['idea','report'],
+      quickshare:['idea','report']
+    };
+    var NOTE = {
+      mi:'<b>Market Insight</b>의 시장 신호가 <b>아이디어·보고서 자판기</b>의 입력으로 쓰입니다.',
+      '2030':'<b>2030 미래 트렌드</b> 시나리오가 <b>아이디어·보고서 자판기</b>의 입력으로 쓰입니다.',
+      idea:'<b>아이디어 자판기</b>는 <b>MI·2030</b>을 재료로 발상하고 결과를 <b>My Space·Quick Share</b>로 확산합니다.',
+      report:'<b>보고서 자판기</b>는 <b>MI·2030</b>과 <b>가이드</b>를 활용해 작성하고 <b>My Space·Quick Share</b>로 배포합니다.',
+      guide:'<b>워드보고서 가이드</b>는 <b>보고서 자판기</b> 작성 방법론을 안내합니다.',
+      space:'<b>My Space</b>에는 <b>아이디어·보고서 자판기</b> 산출물이 모여 공유됩니다.',
+      quickshare:'<b>Quick Share</b>로 <b>아이디어·보고서 자판기</b> 산출물을 빠르게 전달합니다.'
+    };
+    var flow12 = pipe.querySelector('.flow[data-flow="12"]');
+    var flow23 = pipe.querySelector('.flow[data-flow="23"]');
+
+    function clear(){
+      pipe.classList.remove('has-focus');
+      Array.prototype.forEach.call(pipe.querySelectorAll('.is-source,.is-rel'), function(x){ x.classList.remove('is-source','is-rel'); });
+      if(flow12) flow12.classList.remove('is-on');
+      if(flow23) flow23.classList.remove('is-on');
+      if(relnote){ relnote.classList.remove('show'); relnote.innerHTML = ''; }
+    }
+    function focus(card){
+      var id = card.dataset.id;
+      if(!id) return;
+      var rels = REL[id] || [];
+      pipe.classList.add('has-focus');
+      card.classList.add('is-source');
+      var stages = {}; stages[STAGE[id]] = true;
+      rels.forEach(function(r){
+        var t = pipe.querySelector('.card[data-id="'+r+'"]');
+        if(t){ t.classList.add('is-rel'); stages[STAGE[r]] = true; }
+      });
+      if(flow12 && stages[1] && stages[2]) flow12.classList.add('is-on');
+      if(flow23 && stages[2] && stages[3]) flow23.classList.add('is-on');
+      if(relnote){ relnote.innerHTML = NOTE[id] || ''; relnote.classList.add('show'); }
+    }
+    Array.prototype.forEach.call(pipe.querySelectorAll('.card[data-id]'), function(card){
+      card.addEventListener('mouseenter', function(){ focus(card); });
+      card.addEventListener('mouseleave', clear);
     });
   })();
 
