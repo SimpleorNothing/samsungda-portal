@@ -18,6 +18,22 @@
   .section-head h2{font-size:20px;font-weight:700;letter-spacing:-.3px}
   .section-head .desc{font-size:13px;color:var(--muted);margin-top:5px}
   .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  /* ── 워크플로우 파이프라인 ── */
+  .pipe{display:grid;grid-template-columns:1fr 38px 1.18fr 38px 1fr;align-items:start;gap:0}
+  .stage{background:#fbfcfe;border:1.5px solid var(--border);border-radius:14px;padding:16px 13px}
+  .stage-head{display:flex;align-items:center;gap:7px;margin-bottom:12px;padding:0 2px}
+  .stage-no{width:22px;height:22px;border-radius:7px;background:var(--brand);color:#fff;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+  .stage-tt{font-size:14px;font-weight:800;letter-spacing:-.2px}
+  .stage-sub{font-size:11px;color:var(--muted);margin-left:auto}
+  .pipe .card{padding:15px 14px;margin-bottom:10px}
+  .pipe .card:last-child{margin-bottom:0}
+  .pipe .card h3{font-size:14.5px;margin-bottom:6px}
+  .pipe .card h3::after{font-size:13px}
+  .pipe .card h3 .tico,.pipe .card h3 .tico svg{width:21px;height:21px}
+  .pipe .card p{font-size:12px;line-height:1.55}
+  .flow{display:flex;align-items:flex-start;justify-content:center;position:relative;padding-top:58px}
+  .flow svg{width:26px;height:26px;color:var(--brand)}
+  .flow .flow-lbl{position:absolute;top:58px;transform:translateY(-19px);font-size:10px;font-weight:700;color:var(--brand);background:var(--bg);padding:1px 3px;white-space:nowrap}
   .card{display:block;text-decoration:none;color:inherit;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:26px 22px;transition:border-color .15s,box-shadow .15s}
   .card:hover{border-color:var(--brand);box-shadow:0 4px 18px rgba(18,87,214,.10)}
   .card h3{font-size:17px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
@@ -39,6 +55,10 @@
   .footer-rotator.fade{opacity:0}
   @media (max-width:600px){
     .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .pipe{grid-template-columns:1fr;gap:0}
+    .flow{padding:4px 0 14px;align-items:center;justify-content:flex-start}
+    .flow svg{transform:rotate(90deg)}
+    .flow .flow-lbl{position:static;transform:none;background:none;padding:0 0 0 8px}
     .foot-row{grid-template-columns:1fr;justify-items:center;gap:6px}
     .updated{text-align:center}
     .footer-rotator{grid-column:auto;text-align:center}
@@ -53,203 +73,59 @@
   </header>
 
   <section class="section">
-    <div class="grid" data-store="tools" data-drag>
-      <a class="card" href="https://agentguide.samsungda.net" target="_blank" rel="noopener noreferrer">
-        <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3.5" width="11.5" height="17" rx="2"/><path d="M9 9.5h6M9 12.5h6M9 15.5h4"/></g><path d="M18.3 2.4c.3 1.1.85 1.65 1.95 1.95-1.1.3-1.65.85-1.95 1.95-.3-1.1-.85-1.65-1.95-1.95 1.1-.3 1.65-.85 1.95-1.95Z" fill="currentColor"/></svg></span>클로드로 워드보고서 작성하기</h3>
-        <p>Claude AI 에이전트 활용법과 실전 예제를 안내합니다.</p>
-      </a>
-      <a class="card" href="https://report.samsungda.net/" target="_blank" rel="noopener noreferrer">
-        <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.6" width="12" height="18.8" rx="2.2"/><rect x="8" y="5" width="8" height="6" rx="1"/><rect x="8.2" y="16.3" width="7.6" height="2.6" rx=".7"/></g><circle cx="9.2" cy="13.8" r=".75" fill="currentColor"/><circle cx="11.4" cy="13.8" r=".75" fill="currentColor"/><circle cx="13.6" cy="13.8" r=".75" fill="currentColor"/></svg></span>보고서 자판기</h3>
-        <p>지시문을 입력하면 AI가 보고서를 자동으로 작성합니다.</p>
-      </a>
-      <a class="card" href="https://idea.samsungda.net/" target="_blank" rel="noopener noreferrer">
-        <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0-3.6 10.8c.55.42.9 1 .9 1.7v.5h5.4v-.5c0-.7.35-1.28.9-1.7A6 6 0 0 0 12 3Z"/><path d="M9.6 19h4.8M10.4 21.4h3.2"/></g></svg></span>아이디어 자판기</h3>
-        <p>키워드를 입력하면 AI가 새로운 아이디어를 자동으로 제안합니다.</p>
-      </a>
-      <a class="card" href="https://mi.samsungda.net/" target="_blank" rel="noopener noreferrer" data-card-id="mi" data-new-check="daily">
+    <div class="pipe">
+      <div class="stage">
+        <div class="stage-head"><span class="stage-no">1</span><span class="stage-tt">인사이트 센싱</span><span class="stage-sub">Daily 입력</span></div>
+        <a class="card" href="https://mi.samsungda.net/" target="_blank" rel="noopener noreferrer" data-card-id="mi" data-new-check="daily">
         <span class="badge-new">NEW</span>
         <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4v15a1 1 0 0 0 1 1h15"/><path d="M7.5 14.6 10.6 11l2.4 2 4.6-5.9"/><path d="M15.2 7h2.6v2.6"/></g></svg></span>Market Insight</h3>
         <p>시장 동향을 Daily로 센싱합니다.</p>
       </a>
-      <a class="card" href="https://2030.samsungda.net/" target="_blank" rel="noopener noreferrer" data-card-id="2030" data-new-check="daily">
+        <a class="card" href="https://2030.samsungda.net/" target="_blank" rel="noopener noreferrer" data-card-id="2030" data-new-check="daily">
         <span class="badge-new">NEW</span>
         <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c2.5 1.7 3.8 4.5 3.8 7.7 0 1.8-.5 3.4-1.3 4.4H9.5C8.7 14.1 8.2 12.5 8.2 10.7 8.2 7.5 9.5 4.7 12 3Z"/><circle cx="12" cy="9.3" r="1.5"/><path d="M9.5 15.2 7.5 18.5l2.7-1.1M14.5 15.2l2 3.3-2.7-1.1"/><path d="M10.9 18.8c.4 1 1.8 1 2.2 0"/></g></svg></span>2030 미래 트렌드</h3>
         <p>미래 트렌드를 전망하고 시나리오를 분석합니다.</p>
       </a>
-      <a class="card" href="https://quickshare.samsungda.net/" target="_blank" rel="noopener noreferrer">
-        <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="12" r="2.3"/><circle cx="16.5" cy="6" r="2.3"/><circle cx="16.5" cy="18" r="2.3"/><path d="m9 10.9 5.4-3.5M9 13.1l5.4 3.5"/></g></svg></span>Quick Share</h3>
-        <p>텍스트와 파일을 공유할 수 있습니다.</p>
+      </div>
+      <div class="flow"><span class="flow-lbl">활용</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></div>
+      <div class="stage">
+        <div class="stage-head"><span class="stage-no">2</span><span class="stage-tt">발상 · 생성</span><span class="stage-sub">AI 생성</span></div>
+        <a class="card" href="https://idea.samsungda.net/" target="_blank" rel="noopener noreferrer">
+        <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0-3.6 10.8c.55.42.9 1 .9 1.7v.5h5.4v-.5c0-.7.35-1.28.9-1.7A6 6 0 0 0 12 3Z"/><path d="M9.6 19h4.8M10.4 21.4h3.2"/></g></svg></span>아이디어 자판기</h3>
+        <p>키워드를 입력하면 AI가 새로운 아이디어를 자동으로 제안합니다.</p>
       </a>
-      <a class="card" href="https://space.samsungda.net/" target="_blank" rel="noopener noreferrer">
+        <a class="card" href="https://report.samsungda.net/" target="_blank" rel="noopener noreferrer">
+        <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.6" width="12" height="18.8" rx="2.2"/><rect x="8" y="5" width="8" height="6" rx="1"/><rect x="8.2" y="16.3" width="7.6" height="2.6" rx=".7"/></g><circle cx="9.2" cy="13.8" r=".75" fill="currentColor"/><circle cx="11.4" cy="13.8" r=".75" fill="currentColor"/><circle cx="13.6" cy="13.8" r=".75" fill="currentColor"/></svg></span>보고서 자판기</h3>
+        <p>지시문을 입력하면 AI가 보고서를 자동으로 작성합니다.</p>
+      </a>
+        <a class="card" href="https://agentguide.samsungda.net" target="_blank" rel="noopener noreferrer">
+        <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3.5" width="11.5" height="17" rx="2"/><path d="M9 9.5h6M9 12.5h6M9 15.5h4"/></g><path d="M18.3 2.4c.3 1.1.85 1.65 1.95 1.95-1.1.3-1.65.85-1.95 1.95-.3-1.1-.85-1.65-1.95-1.95 1.1-.3 1.65-.85 1.95-1.95Z" fill="currentColor"/></svg></span>클로드로 워드보고서 작성하기</h3>
+        <p>Claude AI 에이전트 활용법과 실전 예제를 안내합니다.</p>
+      </a>
+      </div>
+      <div class="flow"><span class="flow-lbl">배포</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></div>
+      <div class="stage">
+        <div class="stage-head"><span class="stage-no">3</span><span class="stage-tt">공유 · 확산</span><span class="stage-sub">협업</span></div>
+        <a class="card" href="https://space.samsungda.net/" target="_blank" rel="noopener noreferrer">
         <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7"><rect x="3.8" y="3.8" width="7" height="7" rx="1.6"/><rect x="13.2" y="3.8" width="7" height="7" rx="1.6"/><rect x="3.8" y="13.2" width="7" height="7" rx="1.6"/><rect x="13.2" y="13.2" width="7" height="7" rx="1.6"/></g></svg></span>My Space</h3>
         <p>누구나 쓰는 공유 작업 공간입니다.</p>
       </a>
+        <a class="card" href="https://quickshare.samsungda.net/" target="_blank" rel="noopener noreferrer">
+        <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="12" r="2.3"/><circle cx="16.5" cy="6" r="2.3"/><circle cx="16.5" cy="18" r="2.3"/><path d="m9 10.9 5.4-3.5M9 13.1l5.4 3.5"/></g></svg></span>Quick Share</h3>
+        <p>텍스트와 파일을 공유할 수 있습니다.</p>
+      </a>
+      </div>
     </div>
   </section>
 
   <div class="foot-row">
-    <footer class="updated" id="ub-footer">update : 2026.5.23</footer>
+    <footer class="updated" id="ub-footer">update : 2026.6.28</footer>
     <div class="footer-rotator" id="footerRotator">자동화가 비워낸 자리에, 새로운 가능성을 채우다</div>
   </div>
 </div>
 <script>
 (function(){
-  function initGrid(grid){
-    var cards = Array.prototype.slice.call(grid.querySelectorAll('.card'));
-    if(!cards.length) return;
 
-    var COLS = 3, GAP = 14, KEY = 'portal-cells-' + (grid.dataset.store || 'default');
-    var colW = 0, rowH = 0, cells = {}, st = null, justDragged = false, THRESHOLD = 5;
-
-    function keyOf(c){ return c.dataset.key || c.getAttribute('href') || ''; }
-    function isDesktop(){ return window.matchMedia('(min-width:601px)').matches; }
-    function loadCells(){ try{ return JSON.parse(localStorage.getItem(KEY) || '{}') || {}; }catch(e){ return {}; } }
-    function saveCells(){ try{ localStorage.setItem(KEY, JSON.stringify(cells)); }catch(e){} }
-
-    // 셀 좌표 구성: 저장값 우선, 없으면 HTML 순서대로 채움. 중복은 빈 칸으로 보정.
-    function buildCells(){
-      var saved = loadCells();
-      cells = {};
-      cards.forEach(function(c, i){
-        var k = keyOf(c), s = saved[k];
-        cells[k] = (s && typeof s.col==='number' && typeof s.row==='number')
-          ? { col:s.col, row:s.row } : { col:i%COLS, row:Math.floor(i/COLS) };
-      });
-      var occupied = {};
-      function free(){
-        for(var r=0;r<cards.length;r++) for(var c=0;c<COLS;c++){ if(!occupied[c+','+r]) return {col:c,row:r}; }
-        return {col:0,row:0};
-      }
-      cards.forEach(function(c){
-        var k=keyOf(c), cell=cells[k], pos=cell.col+','+cell.row;
-        if(cell.col<0||cell.col>=COLS||cell.row<0||occupied[pos]){ cell=free(); pos=cell.col+','+cell.row; }
-        cells[k]=cell; occupied[pos]=true;
-      });
-    }
-
-    function measure(){
-      grid.classList.remove('is-free');
-      cards.forEach(function(c){ c.removeAttribute('style'); });
-      grid.style.height = '';
-      var cw = grid.clientWidth;
-      colW = (cw - GAP*(COLS-1)) / COLS;
-      var maxH = 0;
-      cards.forEach(function(c){
-        c.style.cssText = 'position:absolute;width:'+colW+'px;left:-9999px;top:0';
-        if(c.offsetHeight > maxH) maxH = c.offsetHeight;
-      });
-      rowH = Math.ceil(maxH);
-    }
-
-    function cellLeft(col){ return Math.round(col*(colW+GAP)); }
-    function cellTop(row){ return Math.round(row*(rowH+GAP)); }
-
-    function applyAll(animate){
-      var maxRow = 0;
-      cards.forEach(function(c){
-        var cell = cells[keyOf(c)];
-        if(animate){
-          c.style.transition = 'left .16s ease, top .16s ease';
-          c.style.left = cellLeft(cell.col)+'px';
-          c.style.top  = cellTop(cell.row)+'px';
-        }else{
-          c.style.cssText = 'position:absolute;width:'+colW+'px;height:'+rowH+'px;left:'+cellLeft(cell.col)+'px;top:'+cellTop(cell.row)+'px';
-        }
-        if(cell.row > maxRow) maxRow = cell.row;
-      });
-      grid.style.height = ((maxRow+1)*(rowH+GAP) - GAP) + 'px';
-      if(animate) setTimeout(function(){ cards.forEach(function(c){ c.style.transition=''; }); }, 200);
-    }
-
-    function layout(){
-      if(st && st.dragging) return;
-      if(!isDesktop()){
-        grid.classList.remove('is-free');
-        grid.style.height = '';
-        cards.forEach(function(c){ c.removeAttribute('style'); });
-        return;
-      }
-      buildCells();
-      measure();
-      grid.classList.add('is-free');
-      applyAll(false);
-    }
-
-    layout();
-    window.addEventListener('load', layout);
-    if(document.fonts && document.fonts.ready){ document.fonts.ready.then(layout); }
-    var rT; window.addEventListener('resize', function(){ clearTimeout(rT); rT = setTimeout(layout, 150); });
-
-    // 기본 링크 드래그 비활성화
-    cards.forEach(function(c){
-      c.setAttribute('draggable','false');
-      c.addEventListener('dragstart', function(e){ e.preventDefault(); });
-    });
-
-    grid.addEventListener('pointerdown', function(e){
-      if(!isDesktop()) return;                       // 모바일: 위치 이동 없음
-      if(e.pointerType !== 'mouse' || e.button !== 0) return; // 마우스에서만
-      var card = e.target.closest && e.target.closest('.card');
-      if(!card || card.parentNode !== grid) return;
-      var r = card.getBoundingClientRect(), base = grid.getBoundingClientRect();
-      st = { card:card, dragging:false, sx:e.clientX, sy:e.clientY,
-             ox:e.clientX - r.left, oy:e.clientY - r.top,
-             baseLeft:base.left, baseTop:base.top };
-    });
-
-    window.addEventListener('pointermove', function(e){
-      if(!st) return;
-      if(!st.dragging){
-        if(Math.abs(e.clientX-st.sx) < THRESHOLD && Math.abs(e.clientY-st.sy) < THRESHOLD) return;
-        st.dragging = true;
-        st.card.style.transition = '';
-        st.card.classList.add('is-dragging');
-        document.body.style.userSelect = 'none';
-      }
-      var cw = grid.clientWidth;
-      var left = e.clientX - st.baseLeft - st.ox;
-      var top  = e.clientY - st.baseTop  - st.oy;
-      left = Math.max(0, Math.min(left, cw - colW));
-      top = Math.max(0, top);
-      st.card.style.left = left + 'px';
-      st.card.style.top  = top + 'px';
-      if(top + rowH + GAP > grid.clientHeight) grid.style.height = (top + rowH + GAP) + 'px';
-    });
-
-    function end(){
-      if(!st) return;
-      var s = st; st = null;
-      if(!s.dragging) return;
-      s.card.classList.remove('is-dragging');
-      document.body.style.userSelect = '';
-      justDragged = true;
-      setTimeout(function(){ justDragged = false; }, 60);
-
-      var left = parseFloat(s.card.style.left) || 0, top = parseFloat(s.card.style.top) || 0;
-      var col = Math.max(0, Math.min(COLS-1, Math.round(left/(colW+GAP))));
-      var row = Math.max(0, Math.min(cards.length-1, Math.round(top/(rowH+GAP))));
-      var k = keyOf(s.card), prev = cells[k];
-      // 목적지 칸이 차 있으면 두 카드의 칸을 맞바꿈
-      var occ = null;
-      for(var kk in cells){ if(kk!==k && cells[kk].col===col && cells[kk].row===row){ occ = kk; break; } }
-      if(occ) cells[occ] = { col:prev.col, row:prev.row };
-      cells[k] = { col:col, row:row };
-      saveCells();
-      applyAll(true);
-    }
-    window.addEventListener('pointerup', end);
-    window.addEventListener('pointercancel', end);
-
-    // 드래그 직후의 클릭(네비게이션) 차단 + 예시(placeholder) 카드 이동 방지
-    grid.addEventListener('click', function(e){
-      if(justDragged){ e.preventDefault(); e.stopPropagation(); return; }
-      var card = e.target.closest && e.target.closest('.card');
-      if(card && card.getAttribute('href') === '#') e.preventDefault();
-    }, true);
-  }
-
-  // 드래그 재배치는 도구 그리드에만 적용
-  Array.prototype.forEach.call(document.querySelectorAll('.grid[data-drag]'), initGrid);
 
   // NEW 배지: 데일리 콘텐츠 미확인 카드에 표시
   (function(){
@@ -283,7 +159,7 @@
     window.__UPDATE_BADGE_DATA = {
       updated_at: at,
       log: [
-        { at: at, summary: "클로드로 작성한 예시 보고서를 '클로드로 워드보고서 작성하기' 사이트로 이동" }
+        { at: at, summary: "기획도구 7종을 워크플로우 3단계(인사이트 센싱 · 발상 · 공유) 파이프라인으로 재배치" }
       ]
     };
   })();
