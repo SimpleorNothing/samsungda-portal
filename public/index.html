@@ -19,7 +19,7 @@
   .section-head .desc{font-size:13px;color:var(--muted);margin-top:5px}
   .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
   /* ── 워크플로우 파이프라인 ── */
-  .pipe{display:grid;grid-template-columns:1fr 1.18fr 1fr;align-items:stretch;gap:14px;position:relative}
+  .pipe{display:grid;grid-template-columns:1fr 1.18fr 1fr;align-items:stretch;gap:34px;position:relative}
   .stage{background:#fbfcfe;border:1.5px solid var(--border);border-radius:14px;padding:20px 13px}
   .stage-head{display:flex;align-items:center;gap:7px;margin-bottom:12px;padding:0 2px}
   .stage-no{width:22px;height:22px;border-radius:7px;background:var(--brand);color:#fff;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
@@ -48,7 +48,10 @@
   .pipe .card.is-rel{border-color:var(--brand)}
   /* 연관 도구를 잇는 방향성 점선 화살표(데이터 흐름 방향) */
   .rel-lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5;overflow:visible}
-  .rel-lines line{stroke:var(--brand);stroke-width:2;stroke-dasharray:2 5;stroke-linecap:round;fill:none;opacity:.85}
+  /* 점들이 흐름 방향(화살촉 쪽)으로 순차적으로 흐른다 — 아우디 시퀀셜 턴시그널 느낌 */
+  .rel-lines line{stroke:var(--brand);stroke-width:2.2;stroke-dasharray:3 6;stroke-linecap:round;fill:none;opacity:.9;animation:rel-flow .55s linear infinite}
+  @keyframes rel-flow{to{stroke-dashoffset:-9}}
+  @media (prefers-reduced-motion:reduce){.rel-lines line{animation:none}}
   /* 데이터 활용 관계 안내 (상단) */
   .relnote{min-height:20px;margin:0 0 26px;font-size:13px;line-height:1.55;color:var(--muted);transition:color .2s ease}
   .relnote b{color:var(--brand);font-weight:700}
