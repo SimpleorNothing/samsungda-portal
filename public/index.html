@@ -25,7 +25,7 @@
   .stage-no{width:22px;height:22px;border-radius:7px;background:var(--brand);color:#fff;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
   .stage-tt{font-size:14px;font-weight:800;letter-spacing:-.2px}
   .stage-sub{font-size:11px;color:var(--muted);margin-left:auto}
-  .pipe .card{padding:23px 14px;margin-bottom:12px}
+  .pipe .card{padding:23px 14px;margin-bottom:24px}
   .pipe .card:last-child{margin-bottom:0}
   .pipe .card h3{font-size:14.5px;margin-bottom:6px}
   .pipe .card h3::after{font-size:13px}
@@ -48,10 +48,9 @@
   .pipe .card.is-rel{border-color:var(--brand)}
   /* 연관 도구를 잇는 방향성 점선 화살표(데이터 흐름 방향) */
   .rel-lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5;overflow:visible}
-  /* 점들이 흐름 방향(화살촉 쪽)으로 순차적으로 흐른다 — 아우디 시퀀셜 턴시그널 느낌 */
-  .rel-lines line{stroke:var(--brand);stroke-width:2.2;stroke-dasharray:3 6;stroke-linecap:round;fill:none;opacity:.9;animation:rel-flow .55s linear infinite}
-  @keyframes rel-flow{to{stroke-dashoffset:-9}}
-  @media (prefers-reduced-motion:reduce){.rel-lines line{animation:none}}
+  /* 점들이 흐름 방향(화살촉 쪽)으로 순차적으로 흐른다 — 아우디 시퀀셜 턴시그널 느낌.
+     흐름은 JS(requestAnimationFrame)로 stroke-dashoffset 를 갱신해 구동한다. */
+  .rel-lines line{stroke:var(--brand);stroke-width:2.2;stroke-dasharray:3 6;stroke-linecap:round;fill:none;opacity:.9}
   /* 데이터 활용 관계 안내 (상단) */
   .relnote{min-height:20px;margin:0 0 26px;font-size:13px;line-height:1.55;color:var(--muted);transition:color .2s ease}
   .relnote b{color:var(--brand);font-weight:700}
@@ -244,6 +243,21 @@
         var c = pipe.querySelector('.card[data-id="'+t+'"]'); if(c) drawArrow(srcRect, rectIn(c, base));
       });
     }
+    // 점선 흐름 애니메이션: rAF 로 stroke-dashoffset 를 갱신해 점이 화살촉 방향으로 흐른다.
+    var FLOW_PERIOD = 9;   // stroke-dasharray(3 6) 한 주기
+    var FLOW_SPEED  = 22;  // px/초
+    var flowOff = 0, flowRAF = null, flowPrev = 0;
+    function flowStep(ts){
+      if(!flowPrev) flowPrev = ts;
+      flowOff = (flowOff - FLOW_SPEED * (ts - flowPrev) / 1000) % FLOW_PERIOD;
+      flowPrev = ts;
+      var lines = svg.querySelectorAll('line');
+      for(var i=0;i<lines.length;i++) lines[i].setAttribute('stroke-dashoffset', flowOff.toFixed(2));
+      flowRAF = requestAnimationFrame(flowStep);
+    }
+    function startFlow(){ if(flowRAF==null){ flowPrev = 0; flowRAF = requestAnimationFrame(flowStep); } }
+    function stopFlow(){ if(flowRAF!=null){ cancelAnimationFrame(flowRAF); flowRAF = null; } }
+
     Array.prototype.forEach.call(pipe.querySelectorAll('.card[data-id]'), function(card){
       card.addEventListener('mouseenter', function(){
         var id = card.dataset.id;
@@ -255,12 +269,14 @@
         });
         clearLines();
         drawLinks(id);
+        startFlow();
         if(relnote){ var note = noteFor(id); if(note) relnote.innerHTML = note; }
       });
       card.addEventListener('mouseleave', function(){
         card.classList.remove('is-source');
         Array.prototype.forEach.call(pipe.querySelectorAll('.card.is-rel'), function(x){ x.classList.remove('is-rel'); });
         clearLines();
+        stopFlow();
         if(relnote) relnote.textContent = DEFAULT;
       });
     });
