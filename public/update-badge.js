@@ -42,8 +42,8 @@
 
     var st = document.createElement('style');
     st.textContent =
-      '#ub-root{position:relative;display:inline-block;font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}' +
-      '#ub-btn{display:inline-flex;align-items:center;gap:7px;padding:0;border:none;background:transparent;color:' + T.muted + ';font-size:13px;line-height:1;cursor:pointer}' +
+      '#ub-root{position:relative;display:inline-block;font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}' +
+      '#ub-btn{display:inline-flex;align-items:center;gap:7px;padding:0;border:none;background:transparent;color:' + T.muted + ';font-size:15px;line-height:1;cursor:pointer}' +
       '#ub-btn:hover{color:' + T.text + '}' +
       '#ub-btn:focus-visible{outline:2px solid ' + T.brand + ';outline-offset:2px;border-radius:4px}' +
       '#ub-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
@@ -51,13 +51,13 @@
       '#ub-panel{position:absolute;left:0;bottom:calc(100% + 8px);width:320px;max-width:78vw;max-height:50vh;overflow:auto;background:' + T.bg + ';border:1px solid ' + T.border + ';border-radius:14px;box-shadow:0 12px 28px rgba(16,22,34,.16);padding:14px 14px 10px;animation:ub-rise .14s ease-out;z-index:9999}' +
       '#ub-panel[hidden]{display:none}' +
       '@keyframes ub-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}' +
-      '.ub-h{font-size:12px;color:' + T.muted + ';margin:0 0 8px;display:flex;justify-content:space-between;align-items:center}' +
+      '.ub-h{font-size:15px;color:' + T.muted + ';margin:0 0 8px;display:flex;justify-content:space-between;align-items:center}' +
       '.ub-x{border:0;background:transparent;color:' + T.muted + ';font-size:16px;line-height:1;cursor:pointer;padding:2px 5px;border-radius:6px}' +
       '.ub-x:hover{background:' + T.surface + ';color:' + T.text + '}' +
       '.ub-item{padding:9px 0;border-top:1px solid ' + T.border + '}' +
       '.ub-item:first-of-type{border-top:0}' +
-      '.ub-when{font-size:11px;color:' + T.muted + ';font-variant-numeric:tabular-nums}' +
-      '.ub-what{font-size:13px;color:' + T.text + ';margin-top:3px;word-break:break-word;line-height:1.45}';
+      '.ub-when{font-size:15px;color:' + T.muted + ';font-variant-numeric:tabular-nums}' +
+      '.ub-what{font-size:15px;color:' + T.text + ';margin-top:3px;word-break:break-word;line-height:1.45}';
     document.head.appendChild(st);
 
     var root = el('div'); root.id = 'ub-root';
@@ -112,7 +112,7 @@
     } else {
       // fallback: footer가 없으면 .wrap 마지막에 추가
       var wrap = document.querySelector('.wrap');
-      var fallback = el('footer', 'margin-top:8px;padding-top:20px;border-top:1px solid #e6e9ee;text-align:left;color:#5b6470;font-size:13px');
+      var fallback = el('footer', 'margin-top:8px;padding-top:20px;border-top:1px solid #e6e9ee;text-align:left;color:#5b6470;font-size:15px');
       fallback.appendChild(root);
       if (wrap) wrap.appendChild(fallback);
       else document.body.appendChild(fallback);

@@ -97,18 +97,19 @@ function loginPage(next, isError) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>기획 도구 모음 — 로그인</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
   :root{--bg:#fff;--surface:#f6f7f9;--text:#1a1d21;--muted:#5b6470;--border:#e6e9ee;--brand:#1257d6}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Pretendard',system-ui,-apple-system,'Segoe UI',Roboto,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:var(--text);background:var(--bg);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  body{font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--text);background:var(--bg);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
   .login{width:100%;max-width:360px;background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:32px 28px}
   h1{font-size:22px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
-  .sub{color:var(--muted);font-size:14px;margin-bottom:22px}
+  .sub{color:var(--muted);font-size:15px;margin-bottom:22px}
   input[type=password]{width:100%;font:inherit;font-size:15px;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;background:#fff;outline:none;transition:border-color .15s}
   input[type=password]:focus{border-color:var(--brand)}
   button{width:100%;margin-top:14px;font:inherit;font-size:15px;font-weight:700;color:#fff;background:var(--brand);border:none;border-radius:10px;padding:12px 14px;cursor:pointer;transition:opacity .15s}
   button:hover{opacity:.92}
-  .err{color:#c0392b;font-size:13px;margin-bottom:14px}
+  .err{color:#c0392b;font-size:15px;margin-bottom:14px}
 </style>
 </head>
 <body>
@@ -162,10 +163,11 @@ function movedPage() {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>페이지 위치가 변경되었습니다 — 기획 도구 모음</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
   :root{--bg:#fff;--surface:#f6f7f9;--text:#1a1d21;--muted:#5b6470;--border:#e6e9ee;--brand:#1257d6}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Pretendard',system-ui,-apple-system,'Segoe UI',Roboto,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:var(--text);background:var(--bg);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  body{font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--text);background:var(--bg);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
   .box{width:100%;max-width:420px;background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:36px 30px;text-align:center}
   h1{font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:12px}
   .sub{color:var(--muted);font-size:15px;line-height:1.65;margin-bottom:24px}
@@ -436,26 +438,27 @@ async function renderLogsPage(env, url) {
 <html lang="ko"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>접속 로그 — ${esc(day)}</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
   :root{--bg:#fff;--surface:#f6f7f9;--text:#1a1d21;--muted:#5b6470;--border:#e6e9ee;--brand:#1257d6}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:var(--text);background:var(--bg);padding:28px;max-width:920px;margin:0 auto}
+  body{font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--text);background:var(--bg);padding:28px;max-width:920px;margin:0 auto}
   h1{font-size:22px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px}
-  .day{color:var(--muted);font-size:14px;margin-bottom:20px}
+  .day{color:var(--muted);font-size:15px;margin-bottom:20px}
   .nav{display:flex;gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
-  .nav a,.nav button{font:inherit;font-size:13px;text-decoration:none;color:var(--text);background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;cursor:pointer}
-  .nav input[type=date]{font:inherit;font-size:13px;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px}
+  .nav a,.nav button{font:inherit;font-size:15px;text-decoration:none;color:var(--text);background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;cursor:pointer}
+  .nav input[type=date]{font:inherit;font-size:15px;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px}
   .cards{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
   .card{flex:1;min-width:160px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px 18px}
-  .card .k{color:var(--muted);font-size:13px;margin-bottom:6px}
+  .card .k{color:var(--muted);font-size:15px;margin-bottom:6px}
   .card .v{font-size:28px;font-weight:800;letter-spacing:-1px}
   h2{font-size:15px;font-weight:700;margin:24px 0 10px}
-  table{width:100%;border-collapse:collapse;font-size:13px}
+  table{width:100%;border-collapse:collapse;font-size:15px}
   th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
-  th{color:var(--muted);font-weight:600;font-size:12px}
+  th{color:var(--muted);font-weight:600;font-size:15px}
   td.num,td.mono{font-variant-numeric:tabular-nums}
   td.num{text-align:right}
-  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .mono{font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
   .empty{color:var(--muted);text-align:center;padding:20px}
 </style></head><body>
   <h1>접속 로그</h1>
