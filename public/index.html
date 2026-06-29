@@ -33,7 +33,6 @@
   .pipe .card p{font-size:12px;line-height:1.55}
   .flow{display:flex;align-items:flex-start;justify-content:center;position:relative;padding-top:70px}
   .flow svg{width:26px;height:26px;color:var(--brand)}
-  .flow .flow-lbl{position:absolute;top:70px;transform:translateY(-19px);font-size:10px;font-weight:700;color:var(--brand);background:var(--bg);padding:1px 3px;white-space:nowrap}
   .card{display:block;text-decoration:none;color:inherit;background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:26px 22px;transition:border-color .15s,box-shadow .15s}
   .card:hover{border-color:var(--brand);box-shadow:0 4px 18px rgba(18,87,214,.10)}
   .card h3{font-size:17px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px}
@@ -65,7 +64,6 @@
     .pipe{grid-template-columns:1fr;gap:0}
     .flow{padding:4px 0 14px;align-items:center;justify-content:flex-start}
     .flow svg{transform:rotate(90deg)}
-    .flow .flow-lbl{position:static;transform:none;background:none;padding:0 0 0 8px}
     .foot-row{grid-template-columns:1fr;justify-items:center;gap:6px}
     .updated{text-align:center}
     .footer-rotator{grid-column:auto;text-align:center}
@@ -96,7 +94,7 @@
         <p>가전의 미래변화 전망</p>
       </a>
       </div>
-      <div class="flow" data-flow="12"><span class="flow-lbl">활용</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></div>
+      <div class="flow" data-flow="12"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></div>
       <div class="stage">
         <div class="stage-head"><span class="stage-no">2</span><span class="stage-tt">인사이트 도출·정리</span></div>
         <a class="card" href="https://idea.samsungda.net/" target="_blank" rel="noopener noreferrer" data-id="idea">
@@ -112,9 +110,9 @@
         <p>클로드 AI 에이전트 활용법, 작성 워드보고서 예시</p>
       </a>
       </div>
-      <div class="flow" data-flow="23"><span class="flow-lbl">배포</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></div>
+      <div class="flow" data-flow="23"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg></div>
       <div class="stage">
-        <div class="stage-head"><span class="stage-no">3</span><span class="stage-tt">결과 공유</span></div>
+        <div class="stage-head"><span class="stage-no">3</span><span class="stage-tt">공유</span></div>
         <a class="card" href="https://quickshare.samsungda.net/" target="_blank" rel="noopener noreferrer" data-id="quickshare">
         <h3><span class="tico"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="12" r="2.3"/><circle cx="16.5" cy="6" r="2.3"/><circle cx="16.5" cy="18" r="2.3"/><path d="m9 10.9 5.4-3.5M9 13.1l5.4 3.5"/></g></svg></span>Quick Share</h3>
         <p>텍스트와 파일 공유</p>
@@ -128,7 +126,7 @@
   </section>
 
   <div class="foot-row">
-    <footer class="updated" id="ub-footer">update : 2026.6.28</footer>
+    <footer class="updated" id="ub-footer">update : 2026.6.29</footer>
     <div class="footer-rotator" id="footerRotator">자동화가 비워낸 자리에, 새로운 가능성을 채우다</div>
   </div>
 </div>
@@ -223,10 +221,11 @@
   // 업데이트 배지: 배포 시각(meta app-updated)을 머리글로 쓰고, 클릭 시 보여줄 변경 내역을 간략히 제공
   (function () {
     var m = document.querySelector('meta[name="app-updated"]');
-    var at = (m && m.content) || '2026-06-28';
+    var at = (m && m.content) || '2026-06-29';
     window.__UPDATE_BADGE_DATA = {
       updated_at: at,
       log: [
+        { at: "2026-06-29", summary: "단계 연결 화살표 라벨 제거 + 3단계 제목을 ‘공유’로 간결화" },
         { at: "2026-06-28", summary: "카테고리 박스 높이 통일 + 카드·박스 높이 약 20% 확대" },
         { at: "2026-06-28", summary: "hover 시 연관 도구 카드를 얇은 파란 테두리로 강조" },
         { at: "2026-06-28", summary: "hover 활용 관계 안내를 한 줄로 통합" },
