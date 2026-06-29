@@ -19,7 +19,7 @@
   .section-head .desc{font-size:13px;color:var(--muted);margin-top:5px}
   .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
   /* ── 워크플로우 파이프라인 ── */
-  .pipe{display:grid;grid-template-columns:1fr 1.18fr 1fr;align-items:stretch;gap:14px}
+  .pipe{display:grid;grid-template-columns:1fr 1.18fr 1fr;align-items:stretch;gap:14px;position:relative}
   .stage{background:#fbfcfe;border:1.5px solid var(--border);border-radius:14px;padding:20px 13px}
   .stage-head{display:flex;align-items:center;gap:7px;margin-bottom:12px;padding:0 2px}
   .stage-no{width:22px;height:22px;border-radius:7px;background:var(--brand);color:#fff;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
@@ -46,6 +46,9 @@
   .pipe .card{transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease}
   .pipe .card.is-source,.pipe .card.is-source:hover{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand) inset,0 8px 24px -10px rgba(18,87,214,.5);transform:translateY(-2px)}
   .pipe .card.is-rel{border-color:var(--brand)}
+  /* 연관 도구를 잇는 방향성 점선 화살표(데이터 흐름 방향) */
+  .rel-lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5;overflow:visible}
+  .rel-lines line{stroke:var(--brand);stroke-width:2;stroke-dasharray:2 5;stroke-linecap:round;fill:none;opacity:.85}
   /* 데이터 활용 관계 안내 (상단) */
   .relnote{min-height:20px;margin:0 0 26px;font-size:13px;line-height:1.55;color:var(--muted);transition:color .2s ease}
   .relnote b{color:var(--brand);font-weight:700}
@@ -77,6 +80,7 @@
 
   <section class="section">
     <div class="pipe">
+      <svg class="rel-lines" aria-hidden="true" preserveAspectRatio="none"><defs><marker id="relArrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1257d6"/></marker></defs></svg>
       <div class="stage">
         <div class="stage-head"><span class="stage-no">1</span><span class="stage-tt">시장 센싱·전망</span></div>
         <a class="card" href="https://mi.samsungda.net/" target="_blank" rel="noopener noreferrer" data-card-id="mi" data-new-check="daily" data-id="mi">
@@ -147,11 +151,13 @@
     });
   })();
 
-  // hover: 카드에 마우스를 올리면 그 카드를 강조하고, 연관 도구 카드에 얇은 파란 테두리를 입히며,
+  // hover: 카드에 마우스를 올리면 그 카드를 강조하고, 연관 도구를 방향성 점선 화살표로 잇고,
   // 활용 관계를 상단에 한 줄로 안내한다. (데스크톱 hover 전용, 실제 링크 클릭은 그대로)
   (function(){
     var pipe = document.querySelector('.pipe');
     if(!pipe) return;
+    var SVGNS = 'http://www.w3.org/2000/svg';
+    var svg = pipe.querySelector('.rel-lines');
     var relnote = document.getElementById('relnote');
     var DEFAULT = relnote ? relnote.textContent : '';
     var LABEL = { mi:'Market Sensing', '2030':'2030 미래 전망', idea:'아이디어 자판기', report:'보고서 자판기', guide:'워드보고서 가이드', space:'My Space', quickshare:'Quick Share' };
@@ -166,6 +172,11 @@
     Object.keys(USES).forEach(function(c){
       USES[c].forEach(function(s){ (USED_BY[s] = USED_BY[s] || []).push(c); });
     });
+    // 카드별 안내 문구(자동 생성을 덮어쓰는 예외). 같은 도구라도 맥락에 따라 다른 이름으로 부른다.
+    var NOTE_OVERRIDE = {
+      idea:  '<b>아이디어 자판기</b>는 <b>Market Sensing</b> · <b>2030 미래 전망</b> · <b>업로드한 워드보고서</b>를 활용합니다.',
+      guide: '<b>업로드한 워드보고서</b>는 <b>아이디어 자판기</b>에, <b>워드보고서 가이드</b>는 <b>보고서 자판기</b>에 활용됩니다.'
+    };
     // 한글 받침에 따른 조사 선택(영문 등은 받침 있음으로 처리)
     function josa(name, withB, woB){
       var ch = name.charCodeAt(name.length-1);
@@ -174,6 +185,7 @@
     }
     function names(ids){ return ids.map(function(k){ return '<b>'+LABEL[k]+'</b>'; }).join(' · '); }
     function noteFor(id){
+      if(NOTE_OVERRIDE[id]) return NOTE_OVERRIDE[id];
       var u = USES[id], b = USED_BY[id];
       if(!u && !b) return null;
       // 한 줄로 결합: 활용하는 것(능동) + 활용되는 곳(수동)
@@ -187,20 +199,65 @@
       }
       return out;
     }
+    // ── 방향성 점선 화살표 ──────────────────────────────────────────
+    function rectIn(el, base){
+      var r = el.getBoundingClientRect();
+      return { w:r.width, h:r.height, cx:r.left-base.left+r.width/2, cy:r.top-base.top+r.height/2 };
+    }
+    // 사각형 중심에서 (px,py) 방향으로 테두리와 만나는 점
+    function edgePoint(rc, px, py){
+      var dx = px-rc.cx, dy = py-rc.cy;
+      if(dx===0 && dy===0) return { x:rc.cx, y:rc.cy };
+      var sx = dx!==0 ? (rc.w/2)/Math.abs(dx) : Infinity;
+      var sy = dy!==0 ? (rc.h/2)/Math.abs(dy) : Infinity;
+      var s = Math.min(sx, sy);
+      return { x:rc.cx+dx*s, y:rc.cy+dy*s };
+    }
+    function clearLines(){
+      Array.prototype.forEach.call(svg.querySelectorAll('line'), function(n){ n.parentNode.removeChild(n); });
+    }
+    // 데이터가 from → to 로 흐름 (화살촉은 to 쪽)
+    function drawArrow(fromRect, toRect){
+      var a = edgePoint(fromRect, toRect.cx, toRect.cy);
+      var b = edgePoint(toRect, fromRect.cx, fromRect.cy);
+      var ln = document.createElementNS(SVGNS, 'line');
+      ln.setAttribute('x1', a.x.toFixed(1)); ln.setAttribute('y1', a.y.toFixed(1));
+      ln.setAttribute('x2', b.x.toFixed(1)); ln.setAttribute('y2', b.y.toFixed(1));
+      ln.setAttribute('marker-end', 'url(#relArrow)');
+      svg.appendChild(ln);
+    }
+    function drawLinks(id){
+      var base = pipe.getBoundingClientRect();
+      svg.setAttribute('viewBox', '0 0 '+base.width+' '+base.height);
+      var srcCard = pipe.querySelector('.card[data-id="'+id+'"]');
+      if(!srcCard) return;
+      var srcRect = rectIn(srcCard, base);
+      // id 가 활용하는 입력(USES[id]) : 입력 → id (화살표가 id 안으로 들어옴)
+      (USES[id]||[]).forEach(function(s){
+        var c = pipe.querySelector('.card[data-id="'+s+'"]'); if(c) drawArrow(rectIn(c, base), srcRect);
+      });
+      // id 를 활용하는 곳(USED_BY[id]) : id → 활용처
+      (USED_BY[id]||[]).forEach(function(t){
+        var c = pipe.querySelector('.card[data-id="'+t+'"]'); if(c) drawArrow(srcRect, rectIn(c, base));
+      });
+    }
     Array.prototype.forEach.call(pipe.querySelectorAll('.card[data-id]'), function(card){
       card.addEventListener('mouseenter', function(){
         var id = card.dataset.id;
         card.classList.add('is-source');
-        // 연관 도구(활용처 + 피활용처)에 얇은 파란 테두리
+        // 연관 도구(활용처 + 피활용처)에 얇은 파란 테두리 + 화살표 연결
         (USES[id]||[]).concat(USED_BY[id]||[]).forEach(function(r){
           var t = pipe.querySelector('.card[data-id="'+r+'"]');
           if(t) t.classList.add('is-rel');
         });
+        clearLines();
+        drawLinks(id);
         if(relnote){ var note = noteFor(id); if(note) relnote.innerHTML = note; }
       });
       card.addEventListener('mouseleave', function(){
         card.classList.remove('is-source');
         Array.prototype.forEach.call(pipe.querySelectorAll('.card.is-rel'), function(x){ x.classList.remove('is-rel'); });
+        clearLines();
         if(relnote) relnote.textContent = DEFAULT;
       });
     });
