@@ -13,7 +13,9 @@
   header{margin-bottom:18px}
   h1{font-size:30px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
   .sub{color:var(--muted);font-size:15px}
-  .sub .hl{font-style:normal;font-weight:500;color:var(--brand);background:linear-gradient(transparent 58%, color-mix(in srgb, var(--brand) 18%, transparent) 58%);padding:0 2px;border-radius:2px}
+  .sub .hl{font-style:normal;font-weight:500;color:var(--brand);background:linear-gradient(transparent 58%, color-mix(in srgb, var(--brand) 18%, transparent) 58%);background-repeat:no-repeat;background-size:0% 100%;padding:0 2px;border-radius:2px;animation:hl-sweep .8s .35s ease-out forwards}
+  @keyframes hl-sweep{to{background-size:100% 100%}}
+  @media (prefers-reduced-motion:reduce){.sub .hl{animation:none;background-size:100% 100%}}
   .section{margin-bottom:40px}
   .section-head{margin-bottom:16px}
   .section-head h2{font-size:20px;font-weight:700;letter-spacing:-.3px}
@@ -297,6 +299,7 @@
     window.__UPDATE_BADGE_DATA = {
       updated_at: at,
       log: [
+        { at: "2026-06-30", summary: "헤더 부제 형광펜을 진입 시 칠해지는 sweep 애니메이션으로 변경" },
         { at: "2026-06-30", summary: "헤더 부제 ‘기획의 한계를 확장하는’ 형광펜 강조" },
         { at: "2026-06-30", summary: "My Space 카드 문구 ‘공유가능’ → ‘공유’로 간결화" },
         { at: "2026-06-30", summary: "도구 카드 높이를 설명 2줄 기준으로 통일" },
@@ -327,7 +330,6 @@
         { at: "2026-06-28", summary: "업데이트 일자 표시 위치를 한 줄 위로 조정" },
         { at: "2026-06-28", summary: "update 배지 구분선 제거·날짜 일반 글꼴, 클릭 시 변경 내역 표시" },
         { at: "2026-06-28", summary: "update 배지 점 삭제·연월일만 표시 + NEW 배지 우측 상단 배치" },
-        { at: "2026-06-28", summary: "NEW 배지 80% 축소 및 카드 우측 하단으로 이동" },
         { at: "2026-06-28", summary: "포털 정리: 제목 변경 및 조사 결과물 섹션 삭제" },
         { at: "2026-06-27", summary: "Market Insight·2030 카드에 NEW 배지 추가" },
         { at: "2026-06-27", summary: "NEW 배지 색상 빨강 → 애플 블루(#0071e3)" },
