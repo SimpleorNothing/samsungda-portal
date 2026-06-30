@@ -13,7 +13,9 @@
   header{margin-bottom:18px}
   h1{font-size:30px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
   .sub{color:var(--muted);font-size:15px}
-  .sub .hl{font-style:normal;font-weight:500;color:var(--brand);background:linear-gradient(transparent 58%, color-mix(in srgb, var(--brand) 18%, transparent) 58%);padding:0 2px;border-radius:2px}
+  .sub .hl{font-style:normal;font-weight:500;color:var(--brand);background:linear-gradient(transparent 58%, color-mix(in srgb, var(--brand) 18%, transparent) 58%);background-repeat:no-repeat;background-size:0% 100%;padding:0 2px;border-radius:2px;animation:hl-sweep .8s .35s ease-out forwards}
+  @keyframes hl-sweep{to{background-size:100% 100%}}
+  @media (prefers-reduced-motion:reduce){.sub .hl{animation:hl-sweep .5s ease-out forwards}}
   .section{margin-bottom:40px}
   .section-head{margin-bottom:16px}
   .section-head h2{font-size:20px;font-weight:700;letter-spacing:-.3px}
@@ -76,7 +78,7 @@
 <div class="wrap">
   <header>
     <h1>기획도구 모음</h1>
-    <p class="sub">자동화를 넘어 <em class="hl">기획의 한계를 확장하는</em> 도구들</p>
+    <p class="sub">자동화를 넘어 <em class="hl">기획의 가능성을 확장하는</em> 도구들</p>
   </header>
 
   <div class="relnote" id="relnote" aria-live="polite">카드에 마우스를 올리면 데이터 활용 관계가 표시됩니다.</div>
@@ -297,14 +299,49 @@
     window.__UPDATE_BADGE_DATA = {
       updated_at: at,
       log: [
-        { at: "2026-06-30", summary: "헤더 부제 '기획의 한계를 확장하는' 형광펜 강조" },
+        { at: "2026-06-30", summary: "헤더 부제 형광펜 sweep: 모션감소 환경에서도 재생 + hover 시 재생" },
+        { at: "2026-06-30", summary: "헤더 부제 문구 변경 ‘기획의 한계를’ → ‘기획의 가능성을 확장하는’" },
+        { at: "2026-06-30", summary: "헤더 부제 형광펜을 진입 시 칠해지는 sweep 애니메이션으로 변경" },
+        { at: "2026-06-30", summary: "헤더 부제 ‘기획의 한계를 확장하는’ 형광펜 강조" },
+        { at: "2026-06-30", summary: "My Space 카드 문구 ‘공유가능’ → ‘공유’로 간결화" },
         { at: "2026-06-30", summary: "도구 카드 높이를 설명 2줄 기준으로 통일" },
+        { at: "2026-06-30", summary: "자료실 파일 목록에서 아이디어 뱅크(idea-bank/) 항목 제외" },
+        { at: "2026-06-29", summary: "전사 폰트 표준 적용 — 최소 글자 크기 15px·Pretendard 통일" },
+        { at: "2026-06-29", summary: "워드보고서 활용 관계 문구 순서 변경(2030 미래 전망·아이디어 자판기)" },
+        { at: "2026-06-29", summary: "2030 미래 전망 ↔ 업로드한 워드보고서 활용 관계 추가" },
+        { at: "2026-06-29", summary: "화살표 선 두께를 연관 카드 테두리와 동일하게(1.5px) 조정" },
+        { at: "2026-06-29", summary: "카드 상하 간격 확대 + 화살표 흐름 애니메이션 동작 보장" },
+        { at: "2026-06-29", summary: "도구 그룹 간격 확대 + 화살표 시퀀셜 흐름 애니메이션 추가" },
+        { at: "2026-06-29", summary: "hover 문구 정비 + 연관 도구 방향성 점선 화살표 연결" },
+        { at: "2026-06-29", summary: "아이디어 자판기 활용 관계에 워드보고서 가이드 추가" },
         { at: "2026-06-29", summary: "단계 연결 화살표 제거(라벨 포함) + 3단계 제목을 ‘공유’로 간결화" },
+        { at: "2026-06-28", summary: "업데이트 내역 패널에 최근 변경 이력 표시" },
+        { at: "2026-06-28", summary: "기획도구 모음 영어 슬로건을 ‘Automate the Routine, Activate the Possibilities’로 변경" },
         { at: "2026-06-28", summary: "카테고리 박스 높이 통일 + 카드·박스 높이 약 20% 확대" },
         { at: "2026-06-28", summary: "hover 시 연관 도구 카드를 얇은 파란 테두리로 강조" },
         { at: "2026-06-28", summary: "hover 활용 관계 안내를 한 줄로 통합" },
         { at: "2026-06-28", summary: "도구 설명 문구 정비 + 워드보고서 카드 제목 간결화" },
-        { at: "2026-06-28", summary: "기획도구 7종을 워크플로우 3단계 파이프라인으로 재배치" }
+        { at: "2026-06-28", summary: "hover 활용 관계 양방향 확장" },
+        { at: "2026-06-28", summary: "카테고리·도구명 정비 + hover 활용 관계 안내 개선" },
+        { at: "2026-06-28", summary: "포털 카드 hover 연관 강조 인터랙션 추가" },
+        { at: "2026-06-28", summary: "기획도구 7종을 워크플로우 3단계 파이프라인으로 재배치" },
+        { at: "2026-06-28", summary: "포털 푸터 한·영 로테이션 슬로건 추가 + 정렬 정비" },
+        { at: "2026-06-28", summary: "포털 제목·설명 변경 (기획도구 모음 / 한계 확장 컨셉)" },
+        { at: "2026-06-28", summary: "아이디어 자판기 카드 추가" },
+        { at: "2026-06-28", summary: "Market Insight 카드 문구 변경: Daily 센싱 명시" },
+        { at: "2026-06-28", summary: "업데이트 일자 표시 위치를 한 줄 위로 조정" },
+        { at: "2026-06-28", summary: "update 배지 구분선 제거·날짜 일반 글꼴, 클릭 시 변경 내역 표시" },
+        { at: "2026-06-28", summary: "update 배지 점 삭제·연월일만 표시 + NEW 배지 우측 상단 배치" },
+        { at: "2026-06-28", summary: "NEW 배지 80% 축소 및 카드 우측 하단으로 이동" },
+        { at: "2026-06-28", summary: "포털 정리: 제목 변경 및 조사 결과물 섹션 삭제" },
+        { at: "2026-06-27", summary: "Market Insight·2030 카드에 NEW 배지 추가" },
+        { at: "2026-06-27", summary: "NEW 배지 색상 빨강 → 애플 블루(#0071e3)" },
+        { at: "2026-06-27", summary: "update 배지를 고정 오버레이에서 페이지 푸터로 이동" },
+        { at: "2026-06-27", summary: "도구 카드 라인 아이콘 6종 추가" },
+        { at: "2026-06-27", summary: "왼쪽 하단 업데이트 배지 추가 (배포 시각 자동 표시)" },
+        { at: "2026-06-27", summary: "2030·Quick Share 카드 설명 문구 수정" },
+        { at: "2026-06-27", summary: "조사 결과물 모음 안내에 ‘누구나 업로드 가능’ 표기 추가" },
+        { at: "2026-06-27", summary: "워드보고서·가이드 카드 링크를 agentguide.samsungda.net으로 연결" }
       ]
     };
   })();
@@ -327,6 +364,18 @@
         el.classList.remove("fade");
       }, 600);
     }, 6000);
+  })();
+</script>
+<script>
+  // 헤더 부제 형광펜: 진입 1회 + hover 시마다 sweep 재생
+  (function(){
+    var hl = document.querySelector('.sub .hl');
+    if(!hl) return;
+    hl.addEventListener('mouseenter', function(){
+      hl.style.animation = 'none';
+      void hl.offsetWidth;
+      hl.style.animation = 'hl-sweep .8s ease-out forwards';
+    });
   })();
 </script>
 <script defer src="/update-badge.js"></script>
