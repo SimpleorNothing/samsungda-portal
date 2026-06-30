@@ -13,6 +13,7 @@
   header{margin-bottom:18px}
   h1{font-size:30px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
   .sub{color:var(--muted);font-size:15px}
+  .sub .hl{font-style:normal;font-weight:500;color:var(--brand);background:linear-gradient(transparent 58%, color-mix(in srgb, var(--brand) 18%, transparent) 58%);padding:0 2px;border-radius:2px}
   .section{margin-bottom:40px}
   .section-head{margin-bottom:16px}
   .section-head h2{font-size:20px;font-weight:700;letter-spacing:-.3px}
@@ -75,7 +76,7 @@
 <div class="wrap">
   <header>
     <h1>기획도구 모음</h1>
-    <p class="sub">자동화를 넘어 기획의 한계를 확장하는 도구들</p>
+    <p class="sub">자동화를 넘어 <em class="hl">기획의 한계를 확장하는</em> 도구들</p>
   </header>
 
   <div class="relnote" id="relnote" aria-live="polite">카드에 마우스를 올리면 데이터 활용 관계가 표시됩니다.</div>
@@ -296,6 +297,7 @@
     window.__UPDATE_BADGE_DATA = {
       updated_at: at,
       log: [
+        { at: "2026-06-30", summary: "헤더 부제 ‘기획의 한계를 확장하는’ 형광펜 강조" },
         { at: "2026-06-30", summary: "My Space 카드 문구 ‘공유가능’ → ‘공유’로 간결화" },
         { at: "2026-06-30", summary: "도구 카드 높이를 설명 2줄 기준으로 통일" },
         { at: "2026-06-30", summary: "자료실 파일 목록에서 아이디어 뱅크(idea-bank/) 항목 제외" },
