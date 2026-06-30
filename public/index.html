@@ -126,7 +126,7 @@
   </section>
 
   <div class="foot-row">
-    <footer class="updated" id="ub-footer">update : 2026.6.29</footer>
+    <footer class="updated" id="ub-footer">update : 2026.6.30</footer>
     <div class="footer-rotator" id="footerRotator">자동화가 비워낸 자리에, 새로운 가능성을 채우다</div>
   </div>
 </div>
@@ -292,10 +292,11 @@
   // 업데이트 배지: 배포 시각(meta app-updated)을 머리글로 쓰고, 클릭 시 보여줄 변경 내역을 간략히 제공
   (function () {
     var m = document.querySelector('meta[name="app-updated"]');
-    var at = (m && m.content) || '2026-06-29';
+    var at = (m && m.content) || '2026-06-30';
     window.__UPDATE_BADGE_DATA = {
       updated_at: at,
       log: [
+        { at: "2026-06-30", summary: "도구 카드 높이를 설명 2줄 기준으로 통일" },
         { at: "2026-06-29", summary: "단계 연결 화살표 제거(라벨 포함) + 3단계 제목을 ‘공유’로 간결화" },
         { at: "2026-06-28", summary: "카테고리 박스 높이 통일 + 카드·박스 높이 약 20% 확대" },
         { at: "2026-06-28", summary: "hover 시 연관 도구 카드를 얇은 파란 테두리로 강조" },
