@@ -1,6 +1,6 @@
 /*! update-badge.js — 도구모음 공용 업데이트 배지
  * 페이지 하단 footer(#ub-footer)에 "update : YYYY.M.D" 표시. 클릭 시 최근 변경 내역 패널.
- * 데이터 우선순위: window.__UPDATE_BADGE_DATA(인라인) → <meta app-updated> → 같은 출처의 version.json.
+ * 데이터 우선순위: window.__UPDATE_BADGE_DATA(인라인) → 같은 출처의 version.json → <meta app-updated>.
  * 의존성 없음 · 토큰 스타일 인라인 주입 · 어느 스택에 붙여도 동작.
  *
  *   <script defer src="/update-badge.js" data-src="/version.json"></script>
@@ -129,12 +129,15 @@
 
   function boot() {
     if (window.__UPDATE_BADGE_DATA) { mount(window.__UPDATE_BADGE_DATA); return; }
-    var m = fromMeta();
-    if (m) { mount(m); return; }
+    // version.json(커밋 이력 자동 생성)을 먼저 시도하고, 없으면 meta로 폴백
+    var fallback = function () { var m = fromMeta(); if (m) mount(m); };
     fetch(SRC, { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) { if (d) mount(d); })
-      .catch(function () { /* version.json 없으면 조용히 미표시 */ });
+      .then(function (d) {
+        if (d && d.log && d.log.length) mount(d);
+        else fallback();
+      })
+      .catch(fallback);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
