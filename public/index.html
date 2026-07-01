@@ -62,6 +62,10 @@
   .grid.is-free .card{position:absolute;margin:0;cursor:grab}
   .grid.is-free .card.is-dragging{z-index:1000;cursor:grabbing;border-color:var(--brand);box-shadow:0 14px 34px rgba(18,87,214,.22)}
   .foot-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;margin-top:8px}
+  .handbook-link{justify-self:end;display:inline-flex;align-items:center;gap:5px;font-size:13px;color:var(--brand);font-weight:500;text-decoration:none;background:rgba(18,87,214,.06);border:1px solid rgba(18,87,214,.18);border-radius:8px;padding:5px 11px;transition:background .15s,border-color .15s;white-space:nowrap}
+  .handbook-link:hover{background:rgba(18,87,214,.12);border-color:var(--brand)}
+  .handbook-link svg{width:15px;height:15px;flex:0 0 auto}
+  .handbook-link .hb-arrow{opacity:.55}
   .updated{margin:0;padding-top:0;text-align:left;color:var(--muted);font-size:15px}
   .footer-rotator{grid-column:2;text-align:center;font-size:15px;color:var(--muted);font-style:italic;letter-spacing:.2px;opacity:.78;transition:opacity .6s ease;min-height:18px}
   .footer-rotator.fade{opacity:0}
@@ -71,6 +75,7 @@
     .foot-row{grid-template-columns:1fr;justify-items:center;gap:6px}
     .updated{text-align:center}
     .footer-rotator{grid-column:auto;text-align:center}
+    .handbook-link{justify-self:center}
   }
 </style>
 </head>
@@ -131,6 +136,7 @@
   <div class="foot-row">
     <footer class="updated" id="ub-footer">update : 2026.6.30</footer>
     <div class="footer-rotator" id="footerRotator">자동화가 비워낸 자리에, 새로운 가능성을 채우다</div>
+    <a class="handbook-link" href="/static/handbook.html" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.6C10.4 5.4 8.2 4.9 5.4 4.9c-.6 0-1 .4-1 1v10.8c0 .6.4 1 1 1 2.8 0 5 .5 6.6 1.7"/><path d="M12 6.6c1.6-1.2 3.8-1.7 6.6-1.7.6 0 1 .4 1 1v10.8c0 .6-.4 1-1 1-2.8 0-5 .5-6.6 1.7"/><path d="M12 6.6v13.2"/></g></svg>구축 핸드북<span class="hb-arrow">→</span></a>
   </div>
 </div>
 <script>
