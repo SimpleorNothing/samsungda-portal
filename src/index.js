@@ -150,7 +150,7 @@ async function handleLogin(request, env, url) {
   return new Response(null, { status: 303, headers });
 }
 
-// ── 이동된 페이지 안내 ───────────────────────────────────────────────────────────────
+// ── 이동된 페이지 안내 ───────────────────────────────────────────────────────
 // 위치가 변경된 경로(/report, /mi, /2030, /quickshare 등)에 접근하면
 // 안내 문구를 보여준 뒤 5초 카운트다운 후 자동으로 메인(samsungda.net)으로 이동한다.
 // "바로 이동" 버튼으로 즉시 이동할 수도 있다.
@@ -208,88 +208,121 @@ function movedPage() {
 </body>
 </html>`;
   return new Response(html, {
-    status: 410,
+    status: 200,
     headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
   });
 }
 
-// ── 조사 결과물 업로드(R2) ─────────────────────────────────────────────────────────
-const RESEARCH_PREFIX = "research/";
-const MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25MB
-
-function slugifyFilename(name) {
-  const dot = name.lastIndexOf(".");
-  const ext = dot > -1 ? name.slice(dot).toLowerCase() : "";
-  const base = (dot > -1 ? name.slice(0, dot) : name)
-    .replace(/[^\w\uac00-\ud7a3-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 80) || "file";
-  return base + ext;
-}
-
 async function handleResearchApi(request, env, id) {
-  if (!env.RESEARCH) return json({ error: "R2 버킷이 설정되지 않았습니다" }, 501);
+  if (!env.RESEARCH) return json({ error: "R2 bucket not configured" }, 503);
 
-  // 목록
-  if (!id && request.method === "GET") {
-    const list = await env.RESEARCH.list({ prefix: RESEARCH_PREFIX, include: ["customMetadata"] });
-    const items = list.objects
-      .map((o) => ({
-        id: o.key.slice(RESEARCH_PREFIX.length),
+  // Collection: /api/research
+  if (!id) {
+    if (request.method === "GET") {
+      const listed = await env.RESEARCH.list({ include: ["customMetadata", "httpMetadata"] });
+      // report-idea의 아이디어 뱅크(idea-bank/ prefix)는 같은 버킷을 공유하지만
+      // 이 파일 목록의 대상이 아니다. report-idea가 직접 CRUD하며 파일별 삭제
+      // 비밀번호가 없어 여기선 삭제할 수도 없으므로 목록에서 제외한다.
+      const items = listed.objects
+        .filter((o) => !o.key.startsWith("idea-bank/"))
+        .map((o) => ({
+        id: o.key,
+        title: o.customMetadata?.title ? decodeURIComponent(o.customMetadata.title) : o.key,
+        name: o.customMetadata?.name ? decodeURIComponent(o.customMetadata.name) : o.key,
         size: o.size,
+        type: o.httpMetadata?.contentType || "",
         uploaded: o.uploaded,
-        title: (o.customMetadata && o.customMetadata.title) || o.key.slice(RESEARCH_PREFIX.length),
-        contentType: (o.customMetadata && o.customMetadata.contentType) || "",
-      }))
-      .sort((a, b) => new Date(b.uploaded) - new Date(a.uploaded));
-    return json({ items });
+        uploader: o.customMetadata?.uploader ? decodeURIComponent(o.customMetadata.uploader) : "",
+      }));
+      items.sort((a, b) => new Date(b.uploaded) - new Date(a.uploaded));
+      return json(items);
+    }
+    if (request.method === "POST") {
+      // 업로드 권한은 사이트 비밀번호 게이트로 보호됨 — 별도의 공용 업로드 토큰은 불필요.
+      let form;
+      try {
+        form = await request.formData();
+      } catch {
+        return json({ error: "expected multipart/form-data" }, 400);
+      }
+      const file = form.get("file");
+      if (!file || typeof file.arrayBuffer !== "function") return json({ error: "missing file" }, 400);
+      const password = String(form.get("password") || "");
+      if (!password) return json({ error: "file password required" }, 400);
+      const name = String(file.name || "untitled");
+      const title = String(form.get("title") || name.replace(/\.[^.]+$/, ""));
+      const uploader = String(form.get("uploader") || "").slice(0, 40);
+      const safe = (name.replace(/[^\w.\-]+/g, "_").slice(-80)) || "file";
+      const key = Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7) + "-" + safe;
+      const { pwhash, pwsalt } = await hashPassword(password);
+      await env.RESEARCH.put(key, await file.arrayBuffer(), {
+        httpMetadata: { contentType: file.type || "application/octet-stream" },
+        customMetadata: { title: encodeURIComponent(title), name: encodeURIComponent(name), uploader: encodeURIComponent(uploader), pwhash, pwsalt },
+      });
+      return json({ id: key, title, name }, 201);
+    }
+    return json({ error: "method not allowed" }, 405);
   }
 
-  // 업로드
-  if (!id && request.method === "POST") {
-    const ct = request.headers.get("content-type") || "";
-    if (!ct.includes("multipart/form-data")) return json({ error: "multipart/form-data 필요" }, 400);
-    const form = await request.formData();
-    const file = form.get("file");
-    if (!file || typeof file === "string") return json({ error: "file 필드 필요" }, 400);
-    if (file.size > MAX_UPLOAD_BYTES) return json({ error: "25MB 이하만 업로드 가능" }, 413);
-    const title = String(form.get("title") || file.name || "제목 없음").slice(0, 200);
-    const key = RESEARCH_PREFIX + Date.now() + "-" + slugifyFilename(file.name || "file");
-    await env.RESEARCH.put(key, file.stream(), {
-      httpMetadata: { contentType: file.type || "application/octet-stream" },
-      customMetadata: { title, contentType: file.type || "" },
-    });
-    return json({ ok: true, id: key.slice(RESEARCH_PREFIX.length) });
+  // Item: /api/research/<id>
+  if (request.method === "DELETE") {
+    const obj = await env.RESEARCH.head(id);
+    if (!obj) return new Response(null, { status: 204 }); // already gone
+    const provided = request.headers.get("x-file-password") || "";
+    const meta = obj.customMetadata || {};
+    let ok;
+    if (meta.pwhash && meta.pwsalt) {
+      // delete requires the per-file password set by the uploader
+      ok = await verifyPassword(provided, meta.pwhash, meta.pwsalt);
+    } else {
+      // legacy item (no per-file password): fall back to the shared upload token
+      ok = !!env.UPLOAD_TOKEN && provided === env.UPLOAD_TOKEN;
+    }
+    if (!ok) return json({ error: "wrong password" }, 403);
+    await env.RESEARCH.delete(id);
+    return new Response(null, { status: 204 });
   }
-
-  // 삭제
-  if (id && request.method === "DELETE") {
-    await env.RESEARCH.delete(RESEARCH_PREFIX + id);
-    return json({ ok: true });
-  }
-
   return json({ error: "method not allowed" }, 405);
 }
 
 async function serveResearchFile(env, id) {
-  if (!env.RESEARCH) return new Response("R2 not configured", { status: 501, headers: TEXT });
-  const obj = await env.RESEARCH.get(RESEARCH_PREFIX + id);
+  if (!env.RESEARCH) return new Response("R2 bucket not configured", { status: 503, headers: TEXT });
+  const obj = await env.RESEARCH.get(id);
   if (!obj) return new Response("Not found", { status: 404, headers: TEXT });
   const headers = new Headers();
   obj.writeHttpMetadata(headers);
+  headers.set("etag", obj.httpEtag);
   if (!headers.get("content-type")) headers.set("content-type", "application/octet-stream");
+  headers.set("x-content-type-options", "nosniff");
+  // 다운로드 시 R2 키(랜덤 prefix가 붙은 이름) 대신 업로드 당시의 원본 파일명을 사용한다.
+  const meta = obj.customMetadata || {};
+  if (meta.name) {
+    const original = decodeURIComponent(meta.name);
+    const encoded = encodeURIComponent(original);
+    const ascii = original.replace(/[^\x20-\x7E]/g, "_").replace(/["\\]/g, "_");
+    headers.set("content-disposition", `attachment; filename="${ascii}"; filename*=UTF-8''${encoded}`);
+  }
   headers.set("cache-control", "private, max-age=300");
+  // Render uploaded content in an opaque origin so it can never read the
+  // portal's storage/cookies (protects the saved upload token).
+  headers.set(
+    "content-security-policy",
+    "sandbox allow-scripts allow-popups allow-forms allow-modals allow-downloads"
+  );
   return new Response(obj.body, { headers });
 }
 
-// ── 접속 로그(D1, 선택) ─────────────────────────────────────────────────────────────
+// ── 접속 로그(D1) ────────────────────────────────────────────────────────────
+// 요청마다 IP/브라우저/시각을 남겨, 날짜별 고유 방문자를 집계할 수 있게 한다.
+// 날짜 경계는 한국시간(KST, UTC+9) 기준 — "5월 28일"을 사용자가 생각하는 그대로 끊는다.
 function kstDay(date) {
-  return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+  return new Date(date.getTime() + 9 * 3600 * 1000).toISOString().slice(0, 10);
 }
 function fmtKstTime(iso) {
-  try {
-    return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Seoul", hour12: false, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(iso));
-  } catch { return iso; }
+  if (!iso) return "";
+  const k = new Date(new Date(iso).getTime() + 9 * 3600 * 1000);
+  const p = (n) => String(n).padStart(2, "0");
+  return `${p(k.getUTCHours())}:${p(k.getUTCMinutes())}:${p(k.getUTCSeconds())}`;
 }
 function shiftDay(day, delta) {
   const d = new Date(day + "T00:00:00Z");
@@ -297,149 +330,171 @@ function shiftDay(day, delta) {
   return d.toISOString().slice(0, 10);
 }
 
-// UA 문자열에서 브라우저/기기 유형을 대략 분류(정확함보다 가독성 우선).
+// User-Agent 문자열에서 브라우저 종류를 뽑아낸다. 순서 중요(Edge/삼성은 UA에
+// "Chrome"을 포함하므로 먼저 가려낸다).
 function parseBrowser(ua) {
-  ua = ua || "";
-  let device = /Mobile|Android|iPhone|iPad/i.test(ua) ? "모바일" : "PC";
-  let browser = "기타";
-  if (/Edg\//.test(ua)) browser = "Edge";
-  else if (/SamsungBrowser\//.test(ua)) browser = "삼성브라우저";
-  else if (/Chrome\//.test(ua)) browser = "Chrome";
-  else if (/Safari\//.test(ua) && /Version\//.test(ua)) browser = "Safari";
-  else if (/Firefox\//.test(ua)) browser = "Firefox";
-  return { device, browser };
+  if (!ua) return "Unknown";
+  if (/bot|crawler|spider|crawling|facebookexternalhit|slurp|bingpreview|monitor/i.test(ua)) return "Bot";
+  if (/SamsungBrowser/i.test(ua)) return "Samsung Internet";
+  if (/Edg\//i.test(ua)) return "Edge";
+  if (/OPR\/|Opera/i.test(ua)) return "Opera";
+  if (/Chrome\//i.test(ua) && !/Chromium/i.test(ua)) return "Chrome";
+  if (/Firefox\//i.test(ua)) return "Firefox";
+  if (/Safari/i.test(ua)) return "Safari";
+  return "Other";
 }
 
+// 첫 기록 시 한 번만 테이블을 만든다(아이솔레이트당 1회). 이렇게 하면 별도의
+// 마이그레이션 실행 없이 D1만 연결해도 바로 동작한다.
+let schemaReady = false;
 async function ensureSchema(db) {
+  if (schemaReady) return;
   await db.exec(
-    "CREATE TABLE IF NOT EXISTS access_log (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT NOT NULL, day TEXT NOT NULL, path TEXT NOT NULL, method TEXT NOT NULL, country TEXT, city TEXT, ip_hash TEXT, device TEXT, browser TEXT, ua TEXT, referer TEXT); CREATE INDEX IF NOT EXISTS idx_access_log_day ON access_log(day); CREATE INDEX IF NOT EXISTS idx_access_log_ts ON access_log(ts);"
+    "CREATE TABLE IF NOT EXISTS access_log (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT NOT NULL, day TEXT NOT NULL, ip TEXT, ua TEXT, browser TEXT, path TEXT, method TEXT, country TEXT)"
   );
+  await db.exec("CREATE INDEX IF NOT EXISTS idx_access_day ON access_log(day)");
+  schemaReady = true;
 }
 
-// 응답을 막지 않도록 waitUntil로 비동기 기록. D1 바인딩이 없으면 조용히 스킵.
 function logAccess(env, ctx, request, url) {
-  const db = env.ACCESS_LOG;
-  if (!db) return;
-  const path = url.pathname;
-  if (path === "/favicon.ico" || path === "/__logs" || path.startsWith("/__logs/")) return;
+  if (!env.ACCESS_LOG) return; // D1 미연결 시 무동작
+  if (url.pathname.startsWith("/__")) return; // 로그/인증 내부 경로는 기록 제외
+  const now = new Date();
+  const ua = request.headers.get("user-agent") || "";
+  const row = {
+    ts: now.toISOString(),
+    day: kstDay(now),
+    ip: request.headers.get("cf-connecting-ip") || "",
+    ua: ua.slice(0, 300),
+    browser: parseBrowser(ua),
+    path: url.pathname.slice(0, 200),
+    method: request.method,
+    country: (request.cf && request.cf.country) || request.headers.get("cf-ipcountry") || "",
+  };
+  // 로깅이 절대 요청을 깨뜨리지 않도록 백그라운드에서 처리하고 오류는 삼킨다.
   ctx.waitUntil(
     (async () => {
       try {
-        await ensureSchema(db);
-        const now = new Date();
-        const cf = request.cf || {};
-        const ua = request.headers.get("user-agent") || "";
-        const { device, browser } = parseBrowser(ua);
-        const ipRaw = request.headers.get("cf-connecting-ip") || "";
-        // 원본 IP는 저장하지 않고 일 단위 솔트로 해시(같은 날 안에서만 방문자 구분).
-        const day = kstDay(now);
-        const ipHashBytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(day + "|" + ipRaw));
-        const ipHash = bytesToHex(new Uint8Array(ipHashBytes)).slice(0, 16);
-        await db
-          .prepare(
-            "INSERT INTO access_log (ts, day, path, method, country, city, ip_hash, device, browser, ua, referer) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
-          )
-          .bind(
-            now.toISOString(),
-            day,
-            path,
-            request.method,
-            cf.country || "",
-            cf.city || "",
-            ipHash,
-            device,
-            browser,
-            ua.slice(0, 300),
-            (request.headers.get("referer") || "").slice(0, 300)
-          )
+        await ensureSchema(env.ACCESS_LOG);
+        await env.ACCESS_LOG.prepare(
+          "INSERT INTO access_log (ts,day,ip,ua,browser,path,method,country) VALUES (?,?,?,?,?,?,?,?)"
+        )
+          .bind(row.ts, row.day, row.ip, row.ua, row.browser, row.path, row.method, row.country)
           .run();
-      } catch (e) {
-        // 로깅 실패는 서비스에 영향을 주지 않는다.
+      } catch {
+        /* noop */
       }
     })()
   );
 }
 
 async function renderLogsPage(env, url) {
-  const db = env.ACCESS_LOG;
-  if (!db) {
-    return new Response("접속 로그가 꺼져 있습니다. wrangler.jsonc의 d1_databases 바인딩을 추가하세요.", {
-      status: 501,
-      headers: { "content-type": "text/plain; charset=utf-8" },
+  if (!env.ACCESS_LOG) {
+    return new Response("ACCESS_LOG D1 바인딩이 설정되지 않았습니다. wrangler.jsonc 참고.", {
+      status: 503,
+      headers: TEXT,
     });
   }
-  await ensureSchema(db);
+  await ensureSchema(env.ACCESS_LOG);
+  const day = (url.searchParams.get("date") || kstDay(new Date())).slice(0, 10);
+  const db = env.ACCESS_LOG;
 
-  const day = /^\d{4}-\d{2}-\d{2}$/.test(url.searchParams.get("day") || "") ? url.searchParams.get("day") : kstDay(new Date());
+  const uniq = (await db.prepare("SELECT COUNT(DISTINCT ip) AS n FROM access_log WHERE day=?").bind(day).first()) || { n: 0 };
+  const total = (await db.prepare("SELECT COUNT(*) AS n FROM access_log WHERE day=?").bind(day).first()) || { n: 0 };
+  const visitors =
+    (
+      await db
+        .prepare(
+          "SELECT ip, COUNT(*) AS hits, MIN(ts) AS first_seen, MAX(ts) AS last_seen, " +
+            "GROUP_CONCAT(DISTINCT browser) AS browsers, GROUP_CONCAT(DISTINCT country) AS countries " +
+            "FROM access_log WHERE day=? GROUP BY ip ORDER BY hits DESC"
+        )
+        .bind(day)
+        .all()
+    ).results || [];
+  const browsers =
+    (
+      await db
+        .prepare(
+          "SELECT browser, COUNT(DISTINCT ip) AS visitors, COUNT(*) AS hits FROM access_log WHERE day=? GROUP BY browser ORDER BY visitors DESC, hits DESC"
+        )
+        .bind(day)
+        .all()
+    ).results || [];
 
-  const [{ results: rows }, { results: dailyCounts }, { results: pathCounts }] = await Promise.all([
-    db.prepare("SELECT ts, path, method, country, city, ip_hash, device, browser, referer FROM access_log WHERE day = ? ORDER BY ts DESC LIMIT 500").bind(day).all(),
-    db.prepare("SELECT day, COUNT(*) AS hits, COUNT(DISTINCT ip_hash) AS visitors FROM access_log GROUP BY day ORDER BY day DESC LIMIT 14").all(),
-    db.prepare("SELECT path, COUNT(*) AS hits FROM access_log WHERE day = ? GROUP BY path ORDER BY hits DESC LIMIT 12").bind(day).all(),
-  ]);
-
-  const esc = escAttr;
-  const rowsHtml = rows
-    .map(
-      (r) =>
-        `<tr><td>${esc(fmtKstTime(r.ts).slice(11))}</td><td>${esc(r.path)}</td><td>${esc(r.country || "")}${r.city ? " · " + esc(r.city) : ""}</td><td title="${esc(r.ua || "")}">${esc(r.device)} · ${esc(r.browser)}</td><td>${esc((r.ip_hash || "").slice(0, 8))}</td></tr>`
-    )
-    .join("");
-  const dailyHtml = dailyCounts
-    .map((d) => `<tr${d.day === day ? ' class="cur"' : ""}><td><a href="?day=${esc(d.day)}">${esc(d.day)}</a></td><td>${d.hits}</td><td>${d.visitors}</td></tr>`)
-    .join("");
-  const pathHtml = pathCounts.map((p) => `<tr><td>${esc(p.path)}</td><td>${p.hits}</td></tr>`).join("");
+  const esc = (s) => escAttr(s == null ? "" : s);
+  const visitorRows =
+    visitors
+      .map(
+        (v, i) =>
+          `<tr><td>${i + 1}</td><td class="mono">${esc(v.ip) || "(미상)"}</td><td>${esc(v.browsers)}</td><td>${esc(
+            v.countries
+          )}</td><td class="num">${v.hits}</td><td class="mono">${fmtKstTime(v.first_seen)}</td><td class="mono">${fmtKstTime(
+            v.last_seen
+          )}</td></tr>`
+      )
+      .join("") || `<tr><td colspan="7" class="empty">이 날짜에는 접속 기록이 없습니다.</td></tr>`;
+  const browserRows =
+    browsers
+      .map((b) => `<tr><td>${esc(b.browser)}</td><td class="num">${b.visitors}</td><td class="num">${b.hits}</td></tr>`)
+      .join("") || `<tr><td colspan="3" class="empty">—</td></tr>`;
 
   const html = `<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>접속 로그 — ${esc(day)}</title>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
   :root{--bg:#fff;--surface:#f6f7f9;--text:#1a1d21;--muted:#5b6470;--border:#e6e9ee;--brand:#1257d6}
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--text);background:var(--bg);padding:28px;max-width:1100px;margin:0 auto}
+  body{font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--text);background:var(--bg);padding:28px;max-width:920px;margin:0 auto}
   h1{font-size:22px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px}
-  .sub{color:var(--muted);font-size:15px;margin-bottom:20px}
-  .nav{display:flex;gap:8px;align-items:center;margin-bottom:20px;font-size:15px}
-  .nav a{color:var(--brand);text-decoration:none;border:1.5px solid var(--border);border-radius:8px;padding:6px 12px}
-  .nav a:hover{border-color:var(--brand)}
-  .nav b{font-weight:700}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
-  @media(max-width:760px){.grid{grid-template-columns:1fr}}
-  .card{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px}
-  .card h2{font-size:15px;color:var(--muted);font-weight:700;margin-bottom:10px}
+  .day{color:var(--muted);font-size:15px;margin-bottom:20px}
+  .nav{display:flex;gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+  .nav a,.nav button{font:inherit;font-size:15px;text-decoration:none;color:var(--text);background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:7px 12px;cursor:pointer}
+  .nav input[type=date]{font:inherit;font-size:15px;padding:6px 10px;border:1.5px solid var(--border);border-radius:8px}
+  .cards{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+  .card{flex:1;min-width:160px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:16px 18px}
+  .card .k{color:var(--muted);font-size:15px;margin-bottom:6px}
+  .card .v{font-size:28px;font-weight:800;letter-spacing:-1px}
+  h2{font-size:15px;font-weight:700;margin:24px 0 10px}
   table{width:100%;border-collapse:collapse;font-size:15px}
-  th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:340px}
-  th{color:var(--muted);font-weight:700}
-  tr.cur{background:#eef3fd}
-  .muted{color:var(--muted)}
-</style>
-</head>
-<body>
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-weight:600;font-size:15px}
+  td.num,td.mono{font-variant-numeric:tabular-nums}
+  td.num{text-align:right}
+  .mono{font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}
+  .empty{color:var(--muted);text-align:center;padding:20px}
+</style></head><body>
   <h1>접속 로그</h1>
-  <p class="sub">KST 기준 · 원본 IP는 저장하지 않으며 일 단위 해시로 방문자만 구분합니다.</p>
-  <div class="nav">
-    <a href="?day=${esc(shiftDay(day, -1))}">← 전날</a>
-    <b>${esc(day)}</b>
-    <a href="?day=${esc(shiftDay(day, 1))}">다음날 →</a>
-    <a href="/__logs">오늘</a>
+  <p class="day">${esc(day)} (한국시간 기준)</p>
+  <form class="nav" method="GET" action="/__logs">
+    <a href="/__logs?date=${esc(shiftDay(day, -1))}">← 이전날</a>
+    <input type="date" name="date" value="${esc(day)}">
+    <button type="submit">조회</button>
+    <a href="/__logs?date=${esc(shiftDay(day, 1))}">다음날 →</a>
+    <a href="/__logs?date=${esc(kstDay(new Date()))}">오늘</a>
+  </form>
+  <div class="cards">
+    <div class="card"><div class="k">고유 방문자 (IP 기준)</div><div class="v">${uniq.n}</div></div>
+    <div class="card"><div class="k">총 요청 수</div><div class="v">${total.n}</div></div>
   </div>
-  <div class="grid">
-    <div class="card"><h2>최근 14일</h2><table><tr><th>날짜</th><th>요청</th><th>방문자</th></tr>${dailyHtml || '<tr><td colspan="3" class="muted">기록 없음</td></tr>'}</table></div>
-    <div class="card"><h2>경로별 (${esc(day)})</h2><table><tr><th>경로</th><th>요청</th></tr>${pathHtml || '<tr><td colspan="2" class="muted">기록 없음</td></tr>'}</table></div>
-  </div>
-  <div class="card"><h2>상세 (${esc(day)} · 최근 500건)</h2><table><tr><th>시각</th><th>경로</th><th>지역</th><th>환경</th><th>방문자</th></tr>${rowsHtml || '<tr><td colspan="5" class="muted">기록 없음</td></tr>'}</table></div>
-</body>
-</html>`;
-  return new Response(html, { headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+  <h2>방문자별 (IP 단위로 1명 = 1줄)</h2>
+  <table><thead><tr><th>#</th><th>IP</th><th>브라우저</th><th>국가</th><th class="num">요청</th><th>첫 접속</th><th>마지막</th></tr></thead><tbody>${visitorRows}</tbody></table>
+  <h2>브라우저별 집계</h2>
+  <table><thead><tr><th>브라우저</th><th class="num">방문자</th><th class="num">요청</th></tr></thead><tbody>${browserRows}</tbody></table>
+</body></html>`;
+  return new Response(html, {
+    status: 200,
+    headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+  });
 }
 
-// ── 프록시 ─────────────────────────────────────────────────────────────────────────────
-// 산하 도구로 가는 요청을 upstream으로 그대로 전달한다. redirect는 manual로 보존해
-// upstream이 보내는 301/302가 브라우저까지 그대로 전달되도록 한다.
+// ── 산하 도구 투명 프록시 ────────────────────────────────────────────────────
+// 예전에는 /us10y·/webauto 도 BACKEND_UPSTREAM(report-site)로 넘어가 report-site가
+// 다시 각 upstream으로 리버스 프록시했다. 이제 포털이 곧장 각 upstream으로 보내
+// report-site 홉을 제거한다. 업스트림의 3xx(트레일링 슬래시 정규화 등)는 브라우저가
+// 처리하도록 manual로 흘려보낸다.
 async function proxyPass(request, target) {
   const headers = new Headers(request.headers);
   headers.delete("host");
@@ -546,7 +601,7 @@ export default {
       }
     }
 
-    // 인증을 통과한 실제 접속만 기록한다(로그인 페이지에서 튅긴 요청은 제외).
+    // 인증을 통과한 실제 접속만 기록한다(로그인 페이지에서 튕긴 요청은 제외).
     logAccess(env, ctx, request, url);
 
     // 관리자용 접속 로그 조회 페이지(이미 사이트 비밀번호 게이트로 보호됨)
