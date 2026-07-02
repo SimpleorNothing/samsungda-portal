@@ -77,6 +77,27 @@
     .footer-rotator{grid-column:auto;text-align:center}
     .handbook-link{justify-self:center}
   }
+  .foot-actions{justify-self:end;display:inline-flex;align-items:center;gap:8px}
+  button.handbook-link{font:inherit;cursor:pointer}
+  @media (max-width:600px){.foot-actions{justify-self:center;flex-wrap:wrap;justify-content:center}}
+  /* 뉴스레터 신청 모달 */
+  .nl-ov{position:fixed;inset:0;background:rgba(26,29,33,.45);display:none;align-items:center;justify-content:center;padding:24px;z-index:100}
+  .nl-ov.open{display:flex}
+  .nl-modal{background:var(--bg);border:1.5px solid var(--border);border-radius:14px;width:100%;max-width:400px;padding:26px 24px;box-shadow:0 20px 60px rgba(26,29,33,.25)}
+  .nl-modal h3{font-size:18px;font-weight:800;margin-bottom:6px}
+  .nl-msub{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:18px}
+  .nl-field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
+  .nl-field input{width:100%;font-family:inherit;font-size:14px;color:var(--text);padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;outline:none;background:var(--bg);transition:border-color .15s}
+  .nl-field input:focus{border-color:var(--brand)}
+  .nl-err{font-size:12px;color:#c0392b;margin-top:6px;min-height:15px}
+  .nl-actions{display:flex;gap:8px;margin-top:8px}
+  .nl-btn{font-family:inherit;font-size:14px;font-weight:700;padding:11px 14px;border-radius:10px;cursor:pointer;border:1.5px solid var(--border);transition:.15s}
+  .nl-btn.ghost{flex:1;background:var(--surface);color:var(--muted)}
+  .nl-btn.primary{flex:2;background:var(--brand);color:#fff;border-color:var(--brand)}
+  .nl-btn.primary:hover{box-shadow:0 4px 18px rgba(18,87,214,.10)}
+  .nl-btn:disabled{opacity:.6;cursor:default}
+  .nl-done{text-align:center;padding:6px 0}
+  .nl-done .chk{width:46px;height:46px;border-radius:50%;background:rgba(18,87,214,.08);color:var(--brand);font-size:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
 </style>
 </head>
 <body>
@@ -136,9 +157,67 @@
   <div class="foot-row">
     <footer class="updated" id="ub-footer">update : 2026.6.30</footer>
     <div class="footer-rotator" id="footerRotator">자동화가 비워낸 자리에, 새로운 가능성을 채우다</div>
-    <a class="handbook-link" href="/static/handbook.html" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.6C10.4 5.4 8.2 4.9 5.4 4.9c-.6 0-1 .4-1 1v10.8c0 .6.4 1 1 1 2.8 0 5 .5 6.6 1.7"/><path d="M12 6.6c1.6-1.2 3.8-1.7 6.6-1.7.6 0 1 .4 1 1v10.8c0 .6-.4 1-1 1-2.8 0-5 .5-6.6 1.7"/><path d="M12 6.6v13.2"/></g></svg>구축 핸드북<span class="hb-arrow">→</span></a>
+    <div class="foot-actions">
+      <button type="button" class="handbook-link" id="nlOpen" aria-haspopup="dialog"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></g></svg>뉴스레터 신청<span class="hb-arrow">→</span></button>
+      <a class="handbook-link" href="/static/handbook.html" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.6C10.4 5.4 8.2 4.9 5.4 4.9c-.6 0-1 .4-1 1v10.8c0 .6.4 1 1 1 2.8 0 5 .5 6.6 1.7"/><path d="M12 6.6c1.6-1.2 3.8-1.7 6.6-1.7.6 0 1 .4 1 1v10.8c0 .6-.4 1-1 1-2.8 0-5 .5-6.6 1.7"/><path d="M12 6.6v13.2"/></g></svg>구축 핸드북<span class="hb-arrow">→</span></a>
+    </div>
   </div>
 </div>
+
+<!-- 뉴스레터 신청 모달 -->
+<div class="nl-ov" id="nlOv" role="dialog" aria-modal="true" aria-labelledby="nlTitle">
+  <div class="nl-modal">
+    <div id="nlForm">
+      <h3 id="nlTitle">뉴스레터 신청</h3>
+      <p class="nl-msub">매일 아침 07:45, <b>기획 데일리</b>를 메일로 받아보세요.<br>시장지표 · 가전뉴스 · 아이디어뱅크 · 최신 보고서를 한 통에.</p>
+      <div class="nl-field">
+        <label for="nlEmail">이메일 주소</label>
+        <input id="nlEmail" type="email" placeholder="name@samsung.com" autocomplete="email">
+        <div class="nl-err" id="nlErr"></div>
+      </div>
+      <div class="nl-actions">
+        <button type="button" class="nl-btn ghost" id="nlCancel">취소</button>
+        <button type="button" class="nl-btn primary" id="nlSubmit">신청</button>
+      </div>
+    </div>
+    <div class="nl-done" id="nlDone" style="display:none">
+      <div class="chk">✓</div>
+      <h3>신청 완료</h3>
+      <p class="nl-msub" style="margin:6px 0 18px"><b id="nlDoneMail"></b> 로<br>내일 아침부터 기획 데일리가 발송됩니다.</p>
+      <div class="nl-actions"><button type="button" class="nl-btn primary" id="nlClose2">확인</button></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var NL_ENDPOINT = "https://samsungda-newsletter.cw120-park.workers.dev/subscribe";
+  var ov=document.getElementById('nlOv'),form=document.getElementById('nlForm'),done=document.getElementById('nlDone');
+  var email=document.getElementById('nlEmail'),err=document.getElementById('nlErr'),submit=document.getElementById('nlSubmit');
+  function open(){ov.classList.add('open');form.style.display='';done.style.display='none';err.textContent='';email.value='';setTimeout(function(){email.focus();},50);}
+  function close(){ov.classList.remove('open');}
+  function go(){
+    var v=email.value.trim();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)){err.textContent='올바른 이메일 주소를 입력해 주세요.';email.focus();return;}
+    err.textContent='';submit.disabled=true;submit.textContent='신청 중…';
+    fetch(NL_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:v})})
+      .then(function(r){return r.json().catch(function(){return{};}).then(function(j){return{ok:r.ok,j:j};});})
+      .then(function(res){
+        submit.disabled=false;submit.textContent='신청';
+        if(res.ok&&res.j.ok){document.getElementById('nlDoneMail').textContent=v;form.style.display='none';done.style.display='';}
+        else if(res.j&&res.j.error==='domain_not_allowed'){err.textContent='허용되지 않은 도메인입니다.';}
+        else{err.textContent='신청에 실패했습니다. 잠시 후 다시 시도해 주세요.';}
+      })
+      .catch(function(){submit.disabled=false;submit.textContent='신청';err.textContent='네트워크 오류입니다. 다시 시도해 주세요.';});
+  }
+  document.getElementById('nlOpen').addEventListener('click',open);
+  document.getElementById('nlCancel').addEventListener('click',close);
+  document.getElementById('nlClose2').addEventListener('click',close);
+  submit.addEventListener('click',go);
+  email.addEventListener('keydown',function(e){if(e.key==='Enter')go();});
+  ov.addEventListener('click',function(e){if(e.target===ov)close();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+})();
+</script>
 <script>
 (function(){
 
