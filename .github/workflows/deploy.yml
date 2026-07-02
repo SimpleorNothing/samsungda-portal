@@ -10,5 +10,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: cloudflare/wrangler-action@v3
         with:
+          # wrangler v3(액션 기본값)은 wrangler.jsonc를 못 읽어 Missing entry-point로 실패
+          wranglerVersion: "4.107.0"
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
