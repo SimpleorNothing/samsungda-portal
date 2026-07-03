@@ -9,14 +9,32 @@
   if (window.__updateBadgeMounted) return;
   window.__updateBadgeMounted = true;
 
+  var SCRIPT = document.currentScript;
   var SRC =
-    (document.currentScript && document.currentScript.getAttribute('data-src')) ||
+    (SCRIPT && SCRIPT.getAttribute('data-src')) ||
     window.__UPDATE_BADGE_SRC ||
     'version.json';
+  // version.json(Worker) 실패 시 브라우저에서 직접 조회할 GitHub 레포(owner/repo).
+  var REPO =
+    (SCRIPT && SCRIPT.getAttribute('data-repo')) ||
+    window.__UPDATE_BADGE_REPO ||
+    null;
 
+  function cssVar(name, fb) {
+    try {
+      var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+      return v || fb;
+    } catch (e) { return fb; }
+  }
+  // 페이지의 CSS 변수에 적응한다: CI 팔레트 도구(포털·MI·2030 등)는 --ink/--paper/--new,
+  // 기본 토큰 도구는 --bg/--text/--brand 를 상속. 변수가 없으면 기본값으로 폴백.
   var T = {
-    bg: '#ffffff', surface: '#f6f7f9', text: '#1a1d21',
-    muted: '#5b6470', border: '#e6e9ee', brand: '#1257d6'
+    bg:      cssVar('--panel',   cssVar('--bg',   '#ffffff')),
+    surface: cssVar('--surface', cssVar('--paper','#f6f7f9')),
+    text:    cssVar('--text',    cssVar('--ink',  '#1a1d21')),
+    muted:   cssVar('--muted',   '#5b6470'),
+    border:  cssVar('--border',  cssVar('--line', '#e6e9ee')),
+    brand:   cssVar('--brand',   cssVar('--new',  '#1257d6'))
   };
 
   function fmt(iso) {
@@ -127,17 +145,62 @@
     return { updated_at: t.content, summary: note, log: [{ at: t.content, summary: note || '최신 배포' }] };
   }
 
+  // 커밋 첫 줄 → 표시용 요약 (conventional 접두어·PR 꼬리표 제거) — Worker와 동일 규칙
+  function cleanSummary(line) {
+    var s = (line || '').trim();
+    s = s.replace(/^[a-z]+(\([^)]*\))?!?:\s*/i, '');
+    s = s.replace(/\s*\(#\d+\)\s*$/, '');
+    return s.trim();
+  }
+
+  // Worker /version.json 이 비어 올 때(무인증 GitHub 한도 등) 브라우저에서 직접 커밋 이력을
+  // 조회한다. 방문자 IP 기준이라 무인증 한도(60/h)에 여유가 있어 사내 도구엔 충분.
+  function fromGitHub() {
+    if (!REPO) return Promise.resolve(null);
+    return fetch('https://api.github.com/repos/' + REPO + '/commits?per_page=60', {
+      headers: { accept: 'application/vnd.github+json' }, cache: 'no-store'
+    })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (commits) {
+        if (!commits || !commits.length) return null;
+        var log = commits
+          .filter(function (c) { return !(c.parents && c.parents.length > 1); })
+          .map(function (c) {
+            return {
+              at: (c.commit && c.commit.author && c.commit.author.date) || '',
+              raw: ((c.commit && c.commit.message) || '').split('\n')[0].trim()
+            };
+          })
+          .filter(function (it) {
+            return it.at && it.raw &&
+              !/^(merge|chore)\b/i.test(it.raw) && it.raw.indexOf('[skip-log]') < 0;
+          })
+          .map(function (it) { return { at: it.at, summary: cleanSummary(it.raw) }; })
+          .filter(function (it) { return it.summary; })
+          .slice(0, 40);
+        if (!log.length) return null;
+        return { updated_at: log[0].at, log: log };
+      })
+      .catch(function () { return null; });
+  }
+
   function boot() {
     if (window.__UPDATE_BADGE_DATA) { mount(window.__UPDATE_BADGE_DATA); return; }
-    // version.json(커밋 이력 자동 생성)을 먼저 시도하고, 없으면 meta로 폴백
-    var fallback = function () { var m = fromMeta(); if (m) mount(m); };
+    // 우선순위: version.json(Worker) → GitHub 직접 조회 → meta(배포 시각 1건)
+    var metaFallback = function () { var m = fromMeta(); if (m) mount(m); };
+    var ghFallback = function () {
+      fromGitHub().then(function (d) {
+        if (d && d.log && d.log.length) mount(d);
+        else metaFallback();
+      });
+    };
     fetch(SRC, { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
         if (d && d.log && d.log.length) mount(d);
-        else fallback();
+        else ghFallback();
       })
-      .catch(fallback);
+      .catch(ghFallback);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
