@@ -60,6 +60,11 @@
   .pipe .card{transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease}
   .pipe .card.is-source,.pipe .card.is-source:hover{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink) inset,0 8px 24px -10px rgba(23,34,45,.5);transform:translateY(-2px)}
   .pipe .card.is-rel{border-color:var(--ink)}
+  /* 관계도 핸들: 카드 우하단, 평소 희미 → hover 시 강조. 여기 올릴 때만 관계도 표시 */
+  .rel-handle{position:absolute;right:9px;bottom:8px;display:inline-flex;align-items:center;gap:3px;font-size:9.5px;line-height:1;color:var(--line-strong);opacity:.42;letter-spacing:.02em;cursor:pointer;transition:opacity .15s ease,color .15s ease;pointer-events:auto}
+  .rel-handle svg{width:11px;height:11px;display:block;flex:0 0 auto}
+  .rel-handle:hover{opacity:1;color:var(--new)}
+  .pipe .card.is-source .rel-handle{opacity:1;color:var(--new)}
   /* 연관 도구를 잇는 방향성 점선 화살표(데이터 흐름 방향) */
   .rel-lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5;overflow:visible}
   .rel-lines line{stroke:var(--new);stroke-width:1.5;stroke-dasharray:3 6;stroke-linecap:round;fill:none;opacity:.9}
@@ -101,6 +106,7 @@
     .footer-rotator{grid-column:auto;text-align:center;padding-top:0}
     .foot-actions{justify-self:center;padding-top:0}
     .handbook-link{justify-self:center}
+    .rel-handle{display:none}
   }
 </style>
 <script>window.__UPDATE_BADGE_REPO="SimpleorNothing/samsungda-portal";</script>
@@ -112,7 +118,7 @@
     <p class="sub">자동화를 넘어 <em class="hl">기획의 가능성을 확장하는</em> 도구들</p>
   </header>
 
-  <div class="relnote" id="relnote" aria-live="polite">카드에 마우스를 올리면 데이터 활용 관계가 표시됩니다.</div>
+  <div class="relnote" id="relnote" aria-live="polite">카드 우하단 '관계도'에 마우스를 올리면 데이터 활용 관계가 표시됩니다.</div>
 
   <section class="section">
     <div class="pipe">
@@ -199,7 +205,7 @@
     });
   })();
 
-  // hover: 카드에 마우스를 올리면 그 카드를 강조하고, 연관 도구를 방향성 점선 화살표로 잇고,
+  // hover: 카드 우하단의 '관계도' 핸들에 마우스를 올리면 그 카드를 강조하고, 연관 도구를 방향성 점선 화살표로 잇고,
   // 활용 관계를 상단에 한 줄로 안내한다. (데스크톱 hover 전용, 실제 링크 클릭은 그대로)
   (function(){
     var pipe = document.querySelector('.pipe');
@@ -302,27 +308,41 @@
     function startFlow(){ if(flowRAF==null){ flowPrev = 0; flowRAF = requestAnimationFrame(flowStep); } }
     function stopFlow(){ if(flowRAF!=null){ cancelAnimationFrame(flowRAF); flowRAF = null; } }
 
+    // 관계도 표시/해제 (카드 전체가 아니라 우하단 핸들 hover 로만 동작)
+    function activateRel(card){
+      var id = card.dataset.id;
+      card.classList.add('is-source');
+      (USES[id]||[]).concat(USED_BY[id]||[]).forEach(function(r){
+        var t = pipe.querySelector('.card[data-id="'+r+'"]');
+        if(t) t.classList.add('is-rel');
+      });
+      clearLines();
+      drawLinks(id);
+      startFlow();
+      if(relnote){ var note = noteFor(id); if(note) relnote.innerHTML = note; }
+    }
+    function deactivateRel(card){
+      card.classList.remove('is-source');
+      Array.prototype.forEach.call(pipe.querySelectorAll('.card.is-rel'), function(x){ x.classList.remove('is-rel'); });
+      clearLines();
+      stopFlow();
+      if(relnote) relnote.textContent = DEFAULT;
+    }
+    // 3-노드 관계 아이콘
+    var REL_ICON = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.4 7 16.6 8.2M7.4 7.8 9 16.2M16.4 9.5 10.4 16.4"/><circle cx="6" cy="6" r="2.1"/><circle cx="18" cy="7.5" r="2.1"/><circle cx="9" cy="18" r="2.1"/></g></svg>';
     Array.prototype.forEach.call(pipe.querySelectorAll('.card[data-id]'), function(card){
-      card.addEventListener('mouseenter', function(){
-        var id = card.dataset.id;
-        card.classList.add('is-source');
-        // 연관 도구(활용처 + 피활용처)에 얇은 파란 테두리 + 화살표 연결
-        (USES[id]||[]).concat(USED_BY[id]||[]).forEach(function(r){
-          var t = pipe.querySelector('.card[data-id="'+r+'"]');
-          if(t) t.classList.add('is-rel');
-        });
-        clearLines();
-        drawLinks(id);
-        startFlow();
-        if(relnote){ var note = noteFor(id); if(note) relnote.innerHTML = note; }
-      });
-      card.addEventListener('mouseleave', function(){
-        card.classList.remove('is-source');
-        Array.prototype.forEach.call(pipe.querySelectorAll('.card.is-rel'), function(x){ x.classList.remove('is-rel'); });
-        clearLines();
-        stopFlow();
-        if(relnote) relnote.textContent = DEFAULT;
-      });
+      var id = card.dataset.id;
+      // 연관 관계(활용/피활용)가 있는 카드에만 핸들을 붙인다.
+      if(!(USES[id] || USED_BY[id])) return;
+      var handle = document.createElement('span');
+      handle.className = 'rel-handle';
+      handle.setAttribute('title', '데이터 활용 관계 보기');
+      handle.innerHTML = REL_ICON + '<span class="rel-handle-t">관계도</span>';
+      card.appendChild(handle);
+      handle.addEventListener('mouseenter', function(){ activateRel(card); });
+      handle.addEventListener('mouseleave', function(){ deactivateRel(card); });
+      // 핸들 클릭은 카드 링크 이동을 유발하지 않도록 차단(관계도 전용 컨트롤)
+      handle.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); });
     });
   })();
 
