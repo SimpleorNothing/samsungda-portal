@@ -585,6 +585,86 @@ async function handleVersionJson(request, env, ctx) {
   return res;
 }
 
+// ── 도구별 업데이트 피드(/api/tool-updates) ────────────────────────────────
+// 각 산하 도구 레포의 최신 커밋을 모아 "구축 핸드북"이 소비한다.
+// 어느 도구 레포에 push가 생기면 핸드북의 해당 도구 항목이 자동 반영된다(연동).
+// 엣지 캐시로 GitHub API 한도를 보호. private 레포(report-site)는 GITHUB_TOKEN 필요.
+const HANDBOOK_OWNER = "SimpleorNothing";
+const HANDBOOK_PER_TOOL = 5;
+const HANDBOOK_REPOS = [
+  { id: "mi",         repo: "market-insight" },
+  { id: "ci",         repo: "competitor_intelligence" },
+  { id: "2030",       repo: "2030-insight" },
+  { id: "idea",       repo: "report-idea" },
+  { id: "report",     repo: "report-site" },
+  { id: "guide",      repo: "agentguide" },
+  { id: "quickshare", repo: "quickshare" },
+  { id: "space",      repo: "samsungda-space" },
+  { id: "portal",     repo: "samsungda-portal" },
+  { id: "newsletter", repo: "samsungda-newsletter" },
+];
+
+async function fetchRepoLog(owner, repo, env) {
+  const headers = {
+    "user-agent": "samsungda-portal-handbook",
+    accept: "application/vnd.github+json",
+  };
+  if (env.GITHUB_TOKEN) headers.authorization = "Bearer " + env.GITHUB_TOKEN;
+  try {
+    // sha 미지정 → 레포 기본 브랜치의 커밋을 반환(quickshare처럼 main이 아니어도 안전).
+    const r = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/commits?per_page=30`,
+      { headers }
+    );
+    if (!r.ok) return { updated_at: "", log: [] };
+    const commits = await r.json();
+    if (!Array.isArray(commits)) return { updated_at: "", log: [] };
+    const log = commits
+      .filter((c) => !(c.parents && c.parents.length > 1)) // merge 커밋 제외
+      .map((c) => ({
+        at: (c.commit && c.commit.author && c.commit.author.date) || "",
+        raw: ((c.commit && c.commit.message) || "").split("\n")[0].trim(),
+      }))
+      .filter(
+        (it) =>
+          it.at &&
+          it.raw &&
+          !/^(merge|chore)\b/i.test(it.raw) &&
+          !it.raw.includes("[skip-log]")
+      )
+      .map((it) => ({ at: it.at, summary: cleanCommitSummary(it.raw) }))
+      .filter((it) => it.summary)
+      .slice(0, HANDBOOK_PER_TOOL);
+    return { updated_at: (log[0] && log[0].at) || "", log };
+  } catch (e) {
+    return { updated_at: "", log: [] };
+  }
+}
+
+async function handleToolUpdates(request, env, ctx) {
+  const cache = caches.default;
+  const cacheKey = new Request(
+    "https://samsungda-portal.internal/api/tool-updates"
+  );
+  const hit = await cache.match(cacheKey);
+  if (hit) return hit;
+
+  const results = await Promise.all(
+    HANDBOOK_REPOS.map(async (t) => [
+      t.id,
+      await fetchRepoLog(HANDBOOK_OWNER, t.repo, env),
+    ])
+  );
+  const repos = {};
+  for (const [id, data] of results) repos[id] = data;
+
+  const res = json({ generated_at: new Date().toISOString(), repos });
+  res.headers.set("cache-control", "public, max-age=120, s-maxage=600");
+  const anyLog = Object.values(repos).some((d) => d.log && d.log.length);
+  if (anyLog) ctx.waitUntil(cache.put(cacheKey, res.clone()));
+  return res;
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -656,6 +736,16 @@ export default {
     // 업데이트 내역 JSON — 커밋 이력에서 자동 생성(update-badge.js가 소비)
     if (path === "/version.json") {
       return handleVersionJson(request, env, ctx);
+    }
+
+    // 도구별 업데이트 피드 — 구축 핸드북이 소비(각 도구 레포 push 시 자동 반영)
+    if (path === "/api/tool-updates") {
+      return handleToolUpdates(request, env, ctx);
+    }
+
+    // 정적 하위 페이지(구축 핸드북 등) — /static/* 는 정적 자산으로 서빙
+    if (path.startsWith("/static/")) {
+      return env.ASSETS.fetch(request);
     }
 
     // 업데이트 배지 스크립트(정적 자산)
