@@ -61,7 +61,7 @@
     var st = document.createElement('style');
     st.textContent =
       '#ub-root{position:relative;display:inline-block;font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif}' +
-      '#ub-btn{display:inline-flex;align-items:center;gap:7px;padding:0;border:none;background:transparent;color:' + T.muted + ';font-size:15px;line-height:1;cursor:pointer}' +
+      '#ub-btn{display:inline-flex;align-items:center;gap:7px;padding:0;border:none;background:transparent;color:' + T.muted + ';font-size:12.5px;line-height:1;cursor:pointer}' +
       '#ub-btn:hover{color:' + T.text + '}' +
       '#ub-btn:focus-visible{outline:2px solid ' + T.brand + ';outline-offset:2px;border-radius:4px}' +
       '#ub-txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
