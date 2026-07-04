@@ -60,7 +60,7 @@
   .pipe .card{transition:background .2s ease,box-shadow .2s ease,transform .2s ease}
   .pipe .card.is-source,.pipe .card.is-source:hover{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink) inset,0 8px 24px -10px rgba(23,34,45,.5);transform:translateY(-2px)}
   .pipe .card.is-rel{box-shadow:0 0 0 1.5px var(--ink) inset}
-  /* 관계도 핸들: 카드 우하단, 평소 희미 → hover 시 강조. 여기 올릴 때만 관계도 표시 */
+  /* 관계도 핸들: 카드 오른쪽 하단, 평소 희미 → hover 시 강조. 여기 올릴 때만 관계도 표시 */
   .rel-handle{position:absolute;right:9px;bottom:8px;display:inline-flex;align-items:center;gap:3px;font-size:9.5px;line-height:1;color:var(--line-strong);opacity:.42;letter-spacing:.02em;cursor:pointer;transition:opacity .15s ease,color .15s ease;pointer-events:auto}
   .rel-handle svg{width:11px;height:11px;display:block;flex:0 0 auto}
   .rel-handle:hover{opacity:1;color:var(--new)}
@@ -82,20 +82,6 @@
   .handbook-link .hb-arrow{opacity:.55}
   .updated{margin:0;padding-top:7px;text-align:left;color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums}
   .foot-actions{justify-self:end;display:inline-flex;flex-direction:column;align-items:stretch;gap:8px;padding-top:7px}
-  .newsletter-link{display:inline-flex;align-items:center;justify-content:center;gap:5px;font-size:12.5px;color:var(--ink);font-weight:500;background:none;border:1px solid var(--ink);padding:6px 12px;cursor:pointer;transition:background .15s,color .15s;white-space:nowrap;font-family:inherit}
-  .newsletter-link:hover{background:var(--ink);color:var(--paper)}
-  .newsletter-link svg{width:15px;height:15px;flex:0 0 auto}
-  .nl-modal[hidden]{display:none}
-  .nl-modal{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:24px}
-  .nl-backdrop{position:absolute;inset:0;background:rgba(23,34,45,.42)}
-  .nl-dialog{position:relative;background:var(--panel);border:1px solid var(--line-strong);border-top:3px solid var(--ink);max-width:360px;width:100%;padding:28px 26px 26px;text-align:left;box-shadow:0 12px 40px rgba(23,34,45,.14)}
-  .nl-x{position:absolute;top:12px;right:14px;background:none;border:none;font-size:22px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 6px}
-  .nl-x:hover{color:var(--ink)}
-  .nl-badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--new);background:color-mix(in srgb, var(--new) 12%, transparent);padding:3px 8px;margin-bottom:12px}
-  .nl-dialog h3{margin:0 0 8px;font-size:18px;font-weight:800;color:var(--ink)}
-  .nl-dialog p{margin:0 0 18px;font-size:14px;line-height:1.65;color:var(--muted)}
-  .nl-cta{display:inline-flex;align-items:center;gap:5px;font-size:14px;font-weight:600;color:#fff;background:var(--ink);padding:9px 16px;text-decoration:none;transition:opacity .15s}
-  .nl-cta:hover{opacity:.9}
   .footer-rotator{grid-column:2;padding-top:7px;text-align:center;font-size:12.5px;color:var(--muted);font-style:italic;letter-spacing:.2px;opacity:.78;transition:opacity .6s ease;min-height:18px}
   .footer-rotator.fade{opacity:0}
   @media (max-width:600px){
@@ -118,7 +104,7 @@
     <p class="sub">자동화를 넘어 <em class="hl">기획의 가능성을 확장하는</em> 도구들</p>
   </header>
 
-  <div class="relnote" id="relnote" aria-live="polite">카드 우하단 '관계도'에 마우스를 올리면 데이터 활용 관계가 표시됩니다.</div>
+  <div class="relnote" id="relnote" aria-live="polite">카드 오른쪽 하단 '관계도'에 마우스를 올리면 데이터 활용 관계가 표시됩니다.</div>
 
   <section class="section">
     <div class="pipe">
@@ -177,7 +163,6 @@
     <footer class="updated" id="ub-footer">update : 2026.6.30</footer>
     <div class="footer-rotator" id="footerRotator">자동화가 비워낸 자리에, 새로운 가능성을 채우다</div>
     <div class="foot-actions">
-      <button type="button" class="newsletter-link" id="nlOpen"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/></g></svg>뉴스레터</button>
       <a class="handbook-link" href="/static/handbook.html" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.6C10.4 5.4 8.2 4.9 5.4 4.9c-.6 0-1 .4-1 1v10.8c0 .6.4 1 1 1 2.8 0 5 .5 6.6 1.7"/><path d="M12 6.6c1.6-1.2 3.8-1.7 6.6-1.7.6 0 1 .4 1 1v10.8c0 .6-.4 1-1 1-2.8 0-5 .5-6.6 1.7"/><path d="M12 6.6v13.2"/></g></svg>구축 핸드북<span class="hb-arrow">→</span></a>
     </div>
   </div>
@@ -205,8 +190,8 @@
     });
   })();
 
-  // hover: 카드 우하단의 '관계도' 핸들에 마우스를 올리면 그 카드를 강조하고, 연관 도구를 방향성 점선 화살표로 잇고,
-  // 활용 관계를 상단에 한 줄로 안내한다. (데스크톱 hover 전용, 실제 링크 클릭은 그대로)
+  // hover 분기: 카드 본문에 올리면 상단에 그 도구 설명을, 카드 오른쪽 하단 '관계도' 핸들에 올리면
+  // 연관 도구를 방향성 점선 화살표로 잇고 활용 관계를 상단에 안내한다. (데스크톱 hover 전용, 링크 클릭은 그대로)
   (function(){
     var pipe = document.querySelector('.pipe');
     if(!pipe) return;
@@ -308,7 +293,7 @@
     function startFlow(){ if(flowRAF==null){ flowPrev = 0; flowRAF = requestAnimationFrame(flowStep); } }
     function stopFlow(){ if(flowRAF!=null){ cancelAnimationFrame(flowRAF); flowRAF = null; } }
 
-    // 관계도 표시/해제 (카드 전체가 아니라 우하단 핸들 hover 로만 동작)
+    // 관계도 표시/해제 (카드 전체가 아니라 오른쪽 하단 핸들 hover 로만 동작)
     function activateRel(card){
       var id = card.dataset.id;
       card.classList.add('is-source');
@@ -326,21 +311,34 @@
       Array.prototype.forEach.call(pipe.querySelectorAll('.card.is-rel'), function(x){ x.classList.remove('is-rel'); });
       clearLines();
       stopFlow();
-      if(relnote) relnote.textContent = DEFAULT;
     }
+    // 상단 안내 문구 제어: 카드 본문 hover → 그 도구 설명 / 카드 밖 → 기본 문구
+    function esc(t){ return String(t).replace(/[&<>]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c]; }); }
+    function showDesc(card){
+      if(!relnote) return;
+      var h3 = card.querySelector('h3'), pd = card.querySelector('p');
+      var title = h3 ? h3.textContent.trim() : '';
+      var desc  = pd ? pd.textContent.trim() : '';
+      relnote.innerHTML = '<b>'+esc(title)+'</b>' + (desc ? ' — '+esc(desc) : '');
+    }
+    function resetNote(){ if(relnote) relnote.textContent = DEFAULT; }
     // 3-노드 관계 아이콘
     var REL_ICON = '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.4 7 16.6 8.2M7.4 7.8 9 16.2M16.4 9.5 10.4 16.4"/><circle cx="6" cy="6" r="2.1"/><circle cx="18" cy="7.5" r="2.1"/><circle cx="9" cy="18" r="2.1"/></g></svg>';
     Array.prototype.forEach.call(pipe.querySelectorAll('.card[data-id]'), function(card){
       var id = card.dataset.id;
-      // 연관 관계(활용/피활용)가 있는 카드에만 핸들을 붙인다.
+      // 카드 본문에 마우스를 올리면 상단에 그 도구의 설명을 표시(모든 카드)
+      card.addEventListener('mouseenter', function(){ showDesc(card); });
+      card.addEventListener('mouseleave', function(){ resetNote(); });
+      // 연관 관계(활용/피활용)가 있는 카드에만 관계도 핸들을 붙인다.
       if(!(USES[id] || USED_BY[id])) return;
       var handle = document.createElement('span');
       handle.className = 'rel-handle';
       handle.setAttribute('title', '데이터 활용 관계 보기');
       handle.innerHTML = REL_ICON + '<span class="rel-handle-t">관계도</span>';
       card.appendChild(handle);
+      // 핸들 hover 시에만 관계도 표시. 핸들에서 벗어나면 다시 카드 설명으로 복귀.
       handle.addEventListener('mouseenter', function(){ activateRel(card); });
-      handle.addEventListener('mouseleave', function(){ deactivateRel(card); });
+      handle.addEventListener('mouseleave', function(){ deactivateRel(card); showDesc(card); });
       // 핸들 클릭은 카드 링크 이동을 유발하지 않도록 차단(관계도 전용 컨트롤)
       handle.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); });
     });
@@ -385,27 +383,5 @@
   })();
 </script>
 <script defer src="/update-badge.js"></script>
-<div class="nl-modal" id="nlModal" hidden>
-  <div class="nl-backdrop" data-close></div>
-  <div class="nl-dialog" role="dialog" aria-modal="true" aria-labelledby="nlTitle">
-    <button class="nl-x" type="button" data-close aria-label="닫기">&times;</button>
-    <div class="nl-badge">기획 데일리</div>
-    <h3 id="nlTitle">뉴스레터 Coming Soon</h3>
-    <p>지표와 뉴스에 의미가 더해진 Insight를 메일로 받을 수 있습니다.</p>
-    <a class="nl-cta" href="https://samsungda-newsletter.cw120-park.workers.dev/preview" target="_blank" rel="noopener noreferrer">미리보기 →</a>
-  </div>
-</div>
-<script>
-(function(){
-  var openBtn = document.getElementById('nlOpen');
-  var modal = document.getElementById('nlModal');
-  if(!openBtn || !modal) return;
-  function open(){ modal.hidden = false; document.addEventListener('keydown', esc); }
-  function close(){ modal.hidden = true; document.removeEventListener('keydown', esc); }
-  function esc(e){ if(e.key === 'Escape') close(); }
-  openBtn.addEventListener('click', open);
-  modal.addEventListener('click', function(e){ if(e.target.hasAttribute('data-close')) close(); });
-})();
-</script>
 </body>
 </html>
