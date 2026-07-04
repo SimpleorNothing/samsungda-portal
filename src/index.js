@@ -590,7 +590,7 @@ async function handleVersionJson(request, env, ctx) {
 // 어느 도구 레포에 push가 생기면 핸드북의 해당 도구 항목이 자동 반영된다(연동).
 // 엣지 캐시로 GitHub API 한도를 보호. private 레포(report-site)는 GITHUB_TOKEN 필요.
 const HANDBOOK_OWNER = "SimpleorNothing";
-const HANDBOOK_MAX_COMMITS = 500; // 전체 이력 상한(런어웨이·레이트리밋 방지)
+const HANDBOOK_PER_TOOL = 100; // 레포당 1회 요청 상한(GitHub per_page 최대). 버스트·2차 레이트리밋 회피
 const HANDBOOK_REPOS = [
   { id: "mi",         repo: "market-insight" },
   { id: "ci",         repo: "competitor_intelligence" },
@@ -612,22 +612,15 @@ async function fetchRepoLog(owner, repo, env) {
   if (env.GITHUB_TOKEN) headers.authorization = "Bearer " + env.GITHUB_TOKEN;
   try {
     // sha 미지정 → 레포 기본 브랜치의 커밋을 반환(quickshare처럼 main이 아니어도 안전).
-    // 전체 이력을 위해 페이지를 순회(상한 HANDBOOK_MAX_COMMITS로 런어웨이·레이트리밋 방지).
-    const perPage = 100;
-    const maxPages = Math.max(1, Math.ceil(HANDBOOK_MAX_COMMITS / perPage));
-    let commits = [];
-    for (let page = 1; page <= maxPages; page++) {
-      const r = await fetch(
-        `https://api.github.com/repos/${owner}/${repo}/commits?per_page=${perPage}&page=${page}`,
-        { headers }
-      );
-      if (!r.ok) break;
-      const batch = await r.json();
-      if (!Array.isArray(batch) || batch.length === 0) break;
-      commits = commits.concat(batch);
-      if (batch.length < perPage) break; // 마지막 페이지 도달
-    }
-    if (!commits.length) return { updated_at: "", log: [] };
+    // 레포당 1회만 요청(per_page=100). 페이지 순회하면 10개 레포를
+    // 동시에 수십 건 던져 GitHub 2차 레이트리밋에 걸려 전체 빈 로그가 된다 — 기존 패턴(레포당 1회) 유지.
+    const r = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/commits?per_page=${HANDBOOK_PER_TOOL}`,
+      { headers }
+    );
+    if (!r.ok) return { updated_at: "", log: [] };
+    const commits = await r.json();
+    if (!Array.isArray(commits)) return { updated_at: "", log: [] };
     const log = commits
       .filter((c) => !(c.parents && c.parents.length > 1)) // merge 커밋 제외
       .map((c) => ({
