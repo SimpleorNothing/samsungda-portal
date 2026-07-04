@@ -44,8 +44,8 @@
   .pipe .card h3::after{font-size:15px}
   .pipe .card h3 .tico,.pipe .card h3 .tico svg{width:21px;height:21px}
   .pipe .card p{font-size:15px;line-height:1.55;min-height:calc(1.55em * 2)}
-  .card{display:block;text-decoration:none;color:inherit;background:var(--panel);border:1px solid var(--line-strong);border-top:3px solid var(--accent,var(--line-strong));padding:26px 22px;transition:border-color .15s,box-shadow .15s}
-  .card:hover{border-color:var(--ink);box-shadow:0 2px 0 var(--accent,var(--ink))}
+  .card{display:block;text-decoration:none;color:inherit;background:color-mix(in srgb,var(--accent,var(--line-strong)) 7%,var(--panel));border:none;padding:26px 22px;transition:background .15s,box-shadow .15s}
+  .card:hover{background:color-mix(in srgb,var(--accent,var(--line-strong)) 14%,var(--panel));box-shadow:0 2px 0 var(--accent,var(--ink))}
   .card h3{font-size:17px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:6px;letter-spacing:-.01em}
   .card h3::after{content:'→';font-size:14px;color:var(--line-strong);margin-left:auto;flex-shrink:0}
   .card:hover h3::after{color:var(--ink)}
@@ -57,9 +57,9 @@
   .badge-new.visible{display:inline-block}
   @keyframes pulse-new{0%,100%{opacity:1}50%{opacity:.65}}
   /* ── hover: 올린 카드 강조 + 연관 카드 테두리 ── */
-  .pipe .card{transition:border-color .2s ease,box-shadow .2s ease,transform .2s ease}
+  .pipe .card{transition:background .2s ease,box-shadow .2s ease,transform .2s ease}
   .pipe .card.is-source,.pipe .card.is-source:hover{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink) inset,0 8px 24px -10px rgba(23,34,45,.5);transform:translateY(-2px)}
-  .pipe .card.is-rel{border-color:var(--ink)}
+  .pipe .card.is-rel{box-shadow:0 0 0 1.5px var(--ink) inset}
   /* 연관 도구를 잇는 방향성 점선 화살표(데이터 흐름 방향) */
   .rel-lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5;overflow:visible}
   .rel-lines line{stroke:var(--new);stroke-width:1.5;stroke-dasharray:3 6;stroke-linecap:round;fill:none;opacity:.9}
