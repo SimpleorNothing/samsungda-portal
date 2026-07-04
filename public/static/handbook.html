@@ -3,110 +3,130 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>구축 핸드북 · 기획도구 모음</title>
+<meta name="robots" content="noindex, nofollow">
+<title>구축 핸드북 — 기획도구 모음</title>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
-  :root{
-    --paper:#EDEFEC;--panel:#ffffff;--ink:#17222D;--muted:#5C6B79;
-    --line:#D3D9D6;--line-strong:#9AA6A0;
-    --new:#46647E;--deep:#2F614D;--insight:#B02E24;--amber:#A9790F;--purple:#6B4E9B;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0}
-  body{font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--ink);background:var(--paper);line-height:1.6;-webkit-font-smoothing:antialiased;padding:48px 24px 72px}
-  .wrap{max-width:960px;margin:0 auto}
+:root{
+  --paper:#EDEFEC; --panel:#FFFFFF; --ink:#17222D; --muted:#5C6B79;
+  --line:#D3D9D6; --line-strong:#9AA6A0;
+  --new:#46647E; --deep:#2F614D; --insight:#B02E24;
+  --amber:#A9790F; --purple:#6B4E9B;
+  --mono:'Pretendard',system-ui,-apple-system,'Segoe UI',Roboto,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+  --sans:'Pretendard',system-ui,-apple-system,'Segoe UI',Roboto,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+.code,.stamp,.eyebrow,.sec-label,.mark,.upd-when,.hd .upd,.chip,.upd-list .d{font-variant-numeric:tabular-nums}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6}
+a{color:inherit}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
 
-  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:22px}
-  .back{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);text-decoration:none;border:1px solid var(--line-strong);padding:6px 12px;background:none;transition:background .15s,color .15s;white-space:nowrap}
-  .back:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-  .synced{font-size:12px;color:var(--muted);display:inline-flex;align-items:center;gap:7px}
-  .dot{width:7px;height:7px;background:var(--deep);border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 3px color-mix(in srgb,var(--deep) 20%,transparent)}
+/* ── 헤더 ── */
+header{border-bottom:2px solid var(--ink);background:var(--paper);position:sticky;top:0;z-index:20}
+.hd{display:flex;align-items:baseline;gap:14px;padding:14px 0;flex-wrap:wrap}
+.hd .mark{font-family:var(--mono);font-weight:600;font-size:13px;letter-spacing:.08em;background:var(--ink);color:var(--paper);padding:3px 8px}
+.hd h1{font-size:19px;font-weight:700;letter-spacing:-.01em}
+.hd .sub{font-size:12.5px;color:var(--muted)}
+.hd .upd{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--muted);display:inline-flex;align-items:center;gap:7px}
+.hd .upd .sq{width:7px;height:7px;background:var(--deep);flex:0 0 auto}
+.back{font-family:var(--mono);font-size:12px;border:1px solid var(--ink);background:none;padding:6px 13px;cursor:pointer;color:var(--ink);text-decoration:none;transition:background .12s,color .12s;white-space:nowrap}
+.back:hover{background:var(--ink);color:var(--paper)}
 
-  header.hd{border-bottom:2px solid var(--ink);padding-bottom:18px;margin-bottom:26px}
-  header.hd h1{font-size:28px;font-weight:800;letter-spacing:-.02em;margin:0 0 8px}
-  header.hd p{font-size:15px;color:var(--muted);margin:0;max-width:64ch}
-  header.hd .en{font-style:italic;color:var(--new);font-weight:500}
+/* ── 인트로 ── */
+.intro{margin:26px 0 8px}
+.intro .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--muted);margin-bottom:8px}
+.intro p{font-size:14px;color:var(--muted);max-width:80ch}
+.intro .en{font-style:italic;color:var(--new)}
+.intro b{color:var(--ink);font-weight:600}
 
-  .infra{background:var(--panel);border:1px solid var(--line-strong);border-left:3px solid var(--new);padding:16px 18px;margin-bottom:30px}
-  .infra h2{font-size:13px;font-weight:700;letter-spacing:.02em;margin:0 0 10px;color:var(--new);text-transform:uppercase}
-  .infra ul{margin:0;padding-left:18px}
-  .infra li{font-size:13.5px;color:var(--ink);margin-bottom:5px}
-  .infra li:last-child{margin-bottom:0}
-  .infra b{font-weight:600}
-  .infra code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:var(--paper);padding:1px 5px;border:1px solid var(--line)}
+/* ── 공유 인프라 프레임 ── */
+.frame{background:var(--panel);border:1px solid var(--line-strong);border-top:4px solid var(--ink);margin:18px 0 8px;padding:22px 24px}
+.frame .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--muted);margin-bottom:12px}
+.frame ul{list-style:none}
+.frame li{font-size:13.5px;padding:6px 0;border-bottom:1px dotted var(--line)}
+.frame li:last-child{border-bottom:none}
+.frame b{font-weight:600}
+.code{font-family:var(--mono);font-size:12px;background:var(--paper);border:1px solid var(--line-strong);padding:1px 7px}
 
-  .stage{margin-bottom:34px}
-  .stage-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-  .stage-no{width:24px;height:24px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:0 0 auto;font-variant-numeric:tabular-nums}
-  .stage-tt{font-size:18px;font-weight:700;letter-spacing:-.01em}
-  .stage:nth-of-type(1){--accent:var(--new)}
-  .stage.s1{--accent:var(--new)} .stage.s2{--accent:var(--deep)} .stage.s3{--accent:var(--purple)} .stage.si{--accent:var(--muted)}
+/* ── 스테이지 ── */
+.sec-label{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--muted);margin:30px 0 12px;display:flex;align-items:center;gap:9px}
+.sec-label .st-no{font-family:var(--mono);font-weight:600;font-size:12px;letter-spacing:0;background:var(--ink);color:var(--paper);padding:2px 8px}
 
-  .tool{background:var(--panel);border:1px solid var(--line-strong);border-top:3px solid var(--accent);padding:20px 20px 18px;margin-bottom:16px}
-  .tool:last-child{margin-bottom:0}
-  .tool-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px;margin-bottom:6px}
-  .tool-name{font-size:17px;font-weight:700;letter-spacing:-.01em}
-  .tool-url{font-size:12.5px;color:var(--new);text-decoration:none;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-  .tool-url:hover{text-decoration:underline}
-  .tool-tag{font-size:14px;color:var(--muted);margin:0 0 12px}
-  .meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
-  .chip{font-size:11.5px;color:var(--muted);border:1px solid var(--line);padding:2px 8px;background:var(--paper);white-space:nowrap}
-  .chip.host{color:var(--ink);border-color:var(--line-strong)}
-  .chip.repo{color:var(--ink);text-decoration:none}
-  .chip.repo:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+/* ── 도구 카드(프레임) ── */
+.tool{background:var(--panel);border:1px solid var(--line-strong);border-top:4px solid var(--ink);padding:20px 22px 18px;margin-bottom:14px;transition:border-color .12s}
+.tool:hover{border-color:var(--ink)}
+.tool-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 12px;margin-bottom:7px}
+.tool-name{font-size:16px;font-weight:700;letter-spacing:-.01em;color:var(--ink)}
+.tool-url{font-family:var(--mono);font-size:12px;color:var(--new);text-decoration:none}
+.tool-url:hover{text-decoration:underline}
+.tool-tag{font-size:13.5px;color:var(--muted);margin-bottom:13px}
+.meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:15px}
+.chip{font-family:var(--mono);font-size:11px;color:var(--muted);border:1px solid var(--line-strong);padding:2px 8px;background:var(--panel);white-space:nowrap}
+.chip.repo{color:var(--ink);text-decoration:none;background:var(--paper)}
+.chip.repo:hover{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.chip.host{color:var(--ink)}
 
-  .upd{border-top:1px dashed var(--line-strong);padding-top:12px}
-  .upd-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
-  .upd-lbl{font-size:11.5px;font-weight:700;letter-spacing:.04em;color:var(--accent);text-transform:uppercase}
-  .upd-when{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
-  .upd-list{list-style:none;margin:0;padding:0}
-  .upd-list li{display:flex;gap:10px;font-size:13px;padding:3px 0;color:var(--ink)}
-  .upd-list li .d{color:var(--muted);font-variant-numeric:tabular-nums;flex:0 0 auto;min-width:52px}
-  .upd-list li .s{min-width:0}
-  .upd-empty{font-size:12.5px;color:var(--muted)}
-  .upd.loading .upd-list li{color:transparent;background:linear-gradient(90deg,var(--paper),var(--line),var(--paper));background-size:200% 100%;animation:sh 1.1s infinite;height:15px;margin:5px 0}
-  @keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+/* ── 최근 업데이트 ── */
+.upd{border-top:1px solid var(--line);padding-top:13px}
+.upd-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:9px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--muted)}
+.stamp{font-family:var(--mono);font-size:11px;border:1px solid var(--line-strong);padding:4px 10px;color:var(--muted);white-space:nowrap}
+.upd-list{list-style:none}
+.upd-list li{display:flex;gap:12px;font-size:13px;padding:4px 0}
+.upd-list li .d{font-family:var(--mono);font-size:11.5px;color:var(--muted);flex:0 0 auto;min-width:46px}
+.upd-list li .s{min-width:0}
+.upd-empty{font-size:12.5px;color:var(--muted)}
+.upd.loading .upd-list li{color:transparent;background:linear-gradient(90deg,var(--paper),var(--line),var(--paper));background-size:200% 100%;animation:sh 1.1s infinite;height:15px;margin:5px 0}
+@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
-  footer.ft{margin-top:40px;padding-top:16px;border-top:1px solid var(--line-strong);font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px}
+/* ── 푸터 ── */
+.foot{margin:38px 0 60px;padding-top:16px;border-top:1px solid var(--line-strong);font-family:var(--mono);font-size:11.5px;color:var(--muted);display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px}
 
-  @media(max-width:560px){
-    body{padding:32px 16px 56px}
-    header.hd h1{font-size:23px}
-    .tool-top{gap:4px 10px}
-  }
+@media(max-width:760px){
+  .hd h1{font-size:17px}
+  .hd .upd{margin-left:0;width:100%}
+  .tool-top{gap:4px 10px}
+}
 </style>
 </head>
 <body>
+
+<header>
+  <div class="wrap">
+    <div class="hd">
+      <span class="mark">HANDBOOK</span>
+      <h1>구축 핸드북</h1>
+      <span class="sub">samsungda.net 기획도구 생태계 구축 기록</span>
+      <span class="upd"><span class="sq"></span><span id="syncTxt">각 도구 레포 커밋 실시간 반영</span></span>
+    </div>
+  </div>
+</header>
+
 <div class="wrap">
 
-  <div class="topbar">
-    <a class="back" href="/">← 도구 모음으로</a>
-    <span class="synced"><span class="dot"></span><span id="syncTxt">각 도구 레포의 커밋을 읽어 자동 갱신</span></span>
+  <div class="intro">
+    <div class="eyebrow">AUTOMATE THE ROUTINE · ACTIVATE THE POSSIBILITIES</div>
+    <p>기획도구 생태계를 어떻게 구축했는지 정리한 문서입니다. 각 도구의 <b>최근 업데이트</b>는 해당 GitHub 레포의 커밋에서 실시간으로 읽어와 자동으로 최신 상태를 유지합니다.</p>
   </div>
 
-  <header class="hd">
-    <h1>구축 핸드북</h1>
-    <p>samsungda.net 기획도구 생태계를 어떻게 구축했는지 정리한 문서입니다.
-       <span class="en">Automate the Routine, Activate the Possibilities.</span>
-       아래 각 도구의 <b>최근 업데이트</b>는 해당 GitHub 레포의 커밋에서 실시간으로 읽어와 자동으로 최신 상태를 유지합니다.</p>
-  </header>
-
-  <section class="infra">
-    <h2>공유 인프라</h2>
+  <section class="frame">
+    <div class="eyebrow">공유 인프라 — SHARED INFRASTRUCTURE</div>
     <ul>
-      <li><b>SSO 게이트</b> — <code>SITE_PASSWORD</code> → HMAC 토큰 → <code>da_portal_session</code> 쿠키(<code>Domain=.samsungda.net</code>, 180일). 모든 도구가 동일 계약을 공유.</li>
-      <li><b>공유 스토리지</b> — R2 버킷 <code>samsungda-research</code>(포털·My Space·아이디어 자판기 공유), Cloudflare zone <code>samsungda.net</code>.</li>
-      <li><b>디자인·폰트</b> — 포털 팔레트(<code>--ink</code>/<code>--paper</code>/<code>--new</code>) 상속, zero border-radius, Pretendard v1.3.9(jsDelivr CDN).</li>
+      <li><b>SSO 게이트</b> — <span class="code">SITE_PASSWORD</span> → HMAC 토큰 → <span class="code">da_portal_session</span> 쿠키(<span class="code">Domain=.samsungda.net</span>, 180일). 모든 도구가 동일 계약 공유.</li>
+      <li><b>공유 스토리지</b> — R2 버킷 <span class="code">samsungda-research</span>(포털·My Space·아이디어 자판기 공유), Cloudflare zone <span class="code">samsungda.net</span>.</li>
+      <li><b>디자인·폰트</b> — CI 팔레트(<span class="code">--ink</span>/<span class="code">--paper</span>/<span class="code">--new</span>) 상속, zero border-radius, Pretendard v1.3.9.</li>
     </ul>
   </section>
 
   <div id="stages"></div>
 
-  <footer class="ft">
+  <div class="foot">
     <span>기획도구 모음 · 구축 핸드북</span>
     <span id="genAt"></span>
-  </footer>
+  </div>
 
 </div>
 
@@ -114,7 +134,7 @@
 (function(){
   // ── 도구 매니페스트: 구축 정보(정적) ─────────────────────────────
   var STAGES = [
-    { cls:"s1", no:"1", title:"시장 센싱·전망", tools:[
+    { no:"1", title:"시장 센싱·전망", tools:[
       { id:"mi",   name:"Market Sensing",  url:"https://mi.samsungda.net/",   repo:"market-insight",
         tag:"시장 동향을 Daily로 센싱하는 뉴스 모니터링 대시보드",
         host:"GitHub Pages", stack:["Haiku 분류","news.json"] },
@@ -125,7 +145,7 @@
         tag:"가전의 미래 변화·메가트렌드 전망 보드",
         host:"GitHub Pages", stack:["Blue Fusion 팔레트"] },
     ]},
-    { cls:"s2", no:"2", title:"인사이트 도출·정리", tools:[
+    { no:"2", title:"인사이트 도출·정리", tools:[
       { id:"idea",   name:"아이디어 자판기", url:"https://idea.samsungda.net/",   repo:"report-idea",
         tag:"보고서 방향·주제를 선택하면 아이디어를 제안",
         host:"Cloudflare Worker", stack:["Apple blue 자체 스타일"] },
@@ -136,7 +156,7 @@
         tag:"Claude AI 에이전트 활용법과 작성 워드보고서 예시 가이드",
         host:"Cloudflare Worker", stack:["에이전트 가이드"] },
     ]},
-    { cls:"s3", no:"3", title:"공유", tools:[
+    { no:"3", title:"공유", tools:[
       { id:"quickshare", name:"Quick Share", url:"https://quickshare.samsungda.net/", repo:"quickshare",
         tag:"텍스트와 파일을 링크로 빠르게 공유",
         host:"Cloudflare Worker", stack:["기본 브랜치 ≠ main"] },
@@ -144,7 +164,7 @@
         tag:"룸 기반 공유 워크스페이스 — 텍스트·파일·HTML 공유",
         host:"Cloudflare Pages", stack:["Functions","R2"] },
     ]},
-    { cls:"si", no:"·", title:"기반 인프라", tools:[
+    { no:"·", title:"기반 인프라", tools:[
       { id:"portal",     name:"기획도구 모음 포털", url:"https://samsungda.net/", repo:"samsungda-portal",
         tag:"SSO 게이트 + 도구 허브. 산하 도구 직접 프록시·업데이트 배지",
         host:"Cloudflare Worker", stack:["version_metadata","ASSETS"] },
@@ -155,9 +175,7 @@
   ];
   var OWNER = "SimpleorNothing";
 
-  // ── 렌더: 정적 골격 먼저(업데이트 영역은 로딩) ─────────────────────
   function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];}); }
-
   function fmtDate(iso){
     try{
       var d=new Date(iso); if(isNaN(d)) return "";
@@ -180,8 +198,7 @@
 
   STAGES.forEach(function(st){
     var sec=document.createElement("section");
-    sec.className="stage "+st.cls;
-    var h='<div class="stage-head"><span class="stage-no">'+esc(st.no)+'</span><span class="stage-tt">'+esc(st.title)+'</span></div>';
+    var h='<div class="sec-label"><span class="st-no">'+esc(st.no)+'</span>'+esc(st.title)+'</div>';
     st.tools.forEach(function(t){
       var repoUrl="https://github.com/"+OWNER+"/"+t.repo;
       var chips='<a class="chip repo" href="'+repoUrl+'" target="_blank" rel="noopener noreferrer">'+esc(t.repo)+'</a>'
@@ -193,7 +210,7 @@
          +   '<p class="tool-tag">'+esc(t.tag)+'</p>'
          +   '<div class="meta">'+chips+'</div>'
          +   '<div class="upd loading" data-upd="'+esc(t.id)+'">'
-         +     '<div class="upd-head"><span class="upd-lbl">최근 업데이트</span><span class="upd-when"></span></div>'
+         +     '<div class="upd-head"><span class="eyebrow">최근 업데이트</span><span class="stamp upd-when"></span></div>'
          +     '<ul class="upd-list"><li></li><li></li><li></li></ul>'
          +   '</div>'
          + '</article>';
@@ -214,7 +231,7 @@
         box.classList.remove("loading");
         var when=box.querySelector(".upd-when");
         var list=box.querySelector(".upd-list");
-        if(info.updated_at){ when.textContent="최종 "+fmtDate(info.updated_at); }
+        if(when){ when.textContent=info.updated_at ? ("최종 "+fmtDate(info.updated_at)) : "—"; }
         if(info.log&&info.log.length){
           list.innerHTML=info.log.map(function(it){
             return '<li><span class="d">'+esc(fmtShort(it.at))+'</span><span class="s">'+esc(it.summary)+'</span></li>';
@@ -224,7 +241,7 @@
         }
       });
       var g=document.getElementById("genAt");
-      if(g&&data.generated_at) g.textContent="동기화 "+fmtDate(data.generated_at);
+      if(g&&data.generated_at) g.textContent="SYNC "+fmtDate(data.generated_at);
     })
     .catch(function(){
       document.querySelectorAll(".upd[data-upd]").forEach(function(box){
@@ -232,7 +249,7 @@
         box.querySelector(".upd-list").outerHTML='<p class="upd-empty">업데이트 정보를 불러오지 못했습니다.</p>';
       });
       var s=document.getElementById("syncTxt");
-      if(s) s.textContent="업데이트 동기화 일시 실패";
+      if(s) s.textContent="동기화 일시 실패";
     });
 })();
 </script>
