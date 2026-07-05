@@ -201,13 +201,14 @@
     var svg = pipe.querySelector('.rel-lines');
     var relnote = document.getElementById('relnote');
     var DEFAULT = relnote ? relnote.textContent : '';
-    var LABEL = { mi:'Market Sensing', ci:'경쟁사 전략 추적', '2030':'2030 미래 전망', idea:'아이디어 자판기', report:'보고서 자판기', guide:'업로드한 워드보고서', space:'My Space', quickshare:'Quick Share' };
+    var LABEL = { mi:'Market Sensing', ci:'경쟁사 전략 추적', '2030':'2030 미래 전망', idea:'아이디어 자판기', report:'보고서 자판기', guide:'업로드한 워드보고서', space:'My Space', quickshare:'Quick Share', newsletter:'뉴스레터 모음' };
     // 활용 관계(시스템 설정값): consumer 가 sources 를 활용한다.
     var USES = {
-      ci:     ['mi','guide'],
-      '2030': ['mi','ci','guide'],
-      idea:   ['mi','2030','ci','guide'],
-      report: ['idea','guide']
+      ci:         ['mi','guide'],
+      '2030':     ['mi','ci','guide'],
+      idea:       ['mi','2030','ci','guide'],
+      report:     ['idea','guide'],
+      newsletter: ['mi','idea','report','guide']
     };
     // 역방향(소스 → 활용처) 자동 생성
     var USED_BY = {};
