@@ -28,7 +28,7 @@
 
 `--brand`는 `var(--new)`로 유지되는 레거시 호환 별칭이며, 신규 코드는 `--new`를 직접 씁니다.
 
-**예외 없음**: 과거 `2030-insight`(2030 미래 전망)만 센싱 리포트 성격상 Pantone 팔레트(`#F0EFEB` Cloud Dancer · `#496176` Blue Fusion 등)를 예외로 썼으나, 생태계 톤 통일을 위해 CI 팔레트로 전환되어 예외가 해소됐습니다. 이제 모든 도구가 CI 팔레트 트랙을 따릅니다. 자세한 내용은 8장 참고.
+**예외**: `2030-insight`(2030 미래 전망)는 센싱 리포트 성격상 Pantone 팔레트(`#F0EFEB` Cloud Dancer · `#496176` Blue Fusion 등)를 의도적으로 씁니다. 생태계에서 유일한 예외이며 다른 도구로 확산하지 않습니다. 자세한 내용은 8장 참고.
 
 ---
 
@@ -118,7 +118,7 @@ CI 편집국 톤에서는 카드·버튼 모두 **radius 0**(각진 모서리)�
 | `market-insight` | Market Sensing | CI 팔레트 | 완료 |
 | `samsungda-space` | My Space | CI 팔레트 | 완료 — PR #73 |
 | `quickshare` | Quick Share | CI 팔레트 | 완료 — PR #49 |
-| `2030-insight` | 2030 미래 전망 | CI 팔레트 | 완료 — Pantone 예외에서 전환 |
+| `2030-insight` | 2030 미래 전망 | Pantone (예외) | 의도적 유일 예외 — 확산 금지 |
 | `report-site` | 보고서 자판기 | 미전환 | 기존 팔레트(Apple 블루 계열) 유지 중 |
 | `report-idea` | 아이디어 자판기 | 미전환 | — |
 | `competitor_intelligence` | 경쟁사 전략 추적 | 미전환 | — |
