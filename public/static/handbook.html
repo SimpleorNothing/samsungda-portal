@@ -94,6 +94,40 @@ header{border-bottom:2px solid var(--ink);background:var(--paper);position:stick
   .hd .upd{margin-left:0;width:100%}
   .tool-top{gap:4px 10px}
 }
+
+/* ── 시스템 관계도 (SYSTEM MAP) ── */
+.sf{margin:26px 0 8px}
+.sf-eye{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--muted);margin-bottom:9px}
+.sf-desc{font-size:13.5px;color:var(--muted);max-width:80ch;margin-bottom:15px}
+.sf-desc b{color:var(--ink);font-weight:600}
+.sf-pick{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}
+.sf-chip{font-family:var(--mono);font-size:11.5px;color:var(--ink);background:var(--panel);border:1px solid var(--line-strong);padding:5px 11px;cursor:pointer;transition:background .12s,color .12s,border-color .12s;white-space:nowrap}
+.sf-chip:hover{border-color:var(--ink)}
+.sf-chip.on{background:var(--new);border-color:var(--new);color:#fff}
+.sf-chip.reset{color:var(--muted)}
+.sf-layer{background:var(--panel);border:1px solid var(--line-strong);border-top:3px solid var(--ink);padding:15px 16px 17px;transition:opacity .15s}
+.sf-lh{display:flex;align-items:baseline;gap:9px;margin-bottom:12px}
+.sf-no{font-family:var(--mono);font-weight:600;font-size:12px;background:var(--ink);color:var(--paper);padding:2px 8px;flex:0 0 auto}
+.sf-lt{font-size:15px;font-weight:700;letter-spacing:-.01em}
+.sf-ld{font-size:12px;color:var(--muted);margin-left:auto;text-align:right}
+.sf-nodes{display:flex;flex-wrap:wrap;gap:8px}
+.sf-node{font-size:13px;font-weight:600;color:var(--ink);background:var(--paper);border:1px solid var(--line-strong);padding:9px 12px;flex:1 1 auto;min-width:135px;transition:opacity .15s,border-color .15s,background .15s;position:relative}
+.sf-node .sf-sub{display:block;font-family:var(--mono);font-size:10.5px;font-weight:400;color:var(--muted);margin-top:3px;line-height:1.4}
+.sf-node.user{cursor:pointer}
+.sf-node.user:hover{border-color:var(--ink)}
+.sf.filtering .sf-node{opacity:.32}
+.sf.filtering .sf-node.hit{opacity:1;border-color:var(--new);box-shadow:inset 0 0 0 1px var(--new)}
+.sf.filtering .sf-layer{opacity:.55}
+.sf.filtering .sf-layer.live{opacity:1}
+.sf-node.sel{border-color:var(--new)!important;background:var(--new)!important;color:#fff!important}
+.sf-node.sel .sf-sub{color:rgba(255,255,255,.85)}
+.sf-flow{display:flex;justify-content:center;padding:5px 0;color:var(--line-strong)}
+.sf-flow svg{width:18px;height:18px}
+.sf.filtering .sf-flow{color:var(--line)}
+.sf-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:13px;font-size:12px;color:var(--muted)}
+.sf-legend span{display:inline-flex;align-items:center;gap:6px}
+.sf-dot{width:10px;height:10px;display:inline-block;flex:0 0 auto}
+@media(max-width:600px){.sf-node{min-width:calc(50% - 4px);flex:1 1 calc(50% - 4px)}.sf-ld{display:none}}
 </style>
 </head>
 <body>
@@ -115,6 +149,138 @@ header{border-bottom:2px solid var(--ink);background:var(--paper);position:stick
     <div class="eyebrow">AUTOMATE THE ROUTINE · ACTIVATE THE POSSIBILITIES</div>
     <p>기획도구 생태계를 어떻게 구축했는지 정리한 문서입니다. 각 도구의 <b>최근 업데이트</b>는 해당 GitHub 레포의 커밋에서 실시간으로 읽어와 자동으로 최신 상태를 유지합니다.</p>
   </div>
+
+  <section class="sf" id="sysmap">
+    <div class="sf-eye">SYSTEM MAP — 웹 구축 시스템 관계도</div>
+    <p class="sf-desc">원천 데이터부터 이용자 화면까지, 최종 결과물이 만들어지는 흐름입니다. 아래에서 <b>이용자 화면</b>을 고르면 그 결과물이 지나온 경로가 켜집니다.</p>
+    <div class="sf-pick" id="sfPick"></div>
+    <div id="sfStack">
+      <div class="sf-layer" data-layer="src">
+        <div class="sf-lh"><span class="sf-no">1</span><span class="sf-lt">소스 · 원천 데이터</span><span class="sf-ld">외부·내부 원료</span></div>
+        <div class="sf-nodes">
+          <div class="sf-node" data-node="MI_NEWS">MI news.json<span class="sf-sub">raw.githubusercontent · CORS</span></div>
+          <div class="sf-node" data-node="YAHOO">Yahoo Finance<span class="sf-sub">주가·환율·ETF</span></div>
+          <div class="sf-node" data-node="FRED">FRED<span class="sf-sub">CPI·금리·주택 거시</span></div>
+          <div class="sf-node" data-node="USER">사용자 입력<span class="sf-sub">메모·파일·업로드</span></div>
+        </div>
+      </div>
+      <div class="sf-flow"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16M6 14l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="sf-layer" data-layer="proc">
+        <div class="sf-lh"><span class="sf-no">2</span><span class="sf-lt">가공 · AI / 처리</span><span class="sf-ld">요약·판정·시각화</span></div>
+        <div class="sf-nodes">
+          <div class="sf-node" data-node="CLAUDE">Claude API<span class="sf-sub">sonnet-4-5 요약·센싱·분류</span></div>
+          <div class="sf-node" data-node="WEBSEARCH">web_search<span class="sf-sub">CI 근거 수집</span></div>
+          <div class="sf-node" data-node="QUICKCHART">QuickChart<span class="sf-sub">스파크라인 차트</span></div>
+          <div class="sf-node" data-node="RULE">Rule fallback<span class="sf-sub">AI 미응답 시 지표 자동생성</span></div>
+        </div>
+      </div>
+      <div class="sf-flow"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16M6 14l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="sf-layer" data-layer="store">
+        <div class="sf-lh"><span class="sf-no">3</span><span class="sf-lt">저장 · 공유 스토리지</span><span class="sf-ld">도구 간 데이터 교환</span></div>
+        <div class="sf-nodes">
+          <div class="sf-node" data-node="R2">Cloudflare R2<span class="sf-sub">samsungda-research 버킷</span></div>
+          <div class="sf-node" data-node="GH_DATA">GitHub 데이터·릴리즈<span class="sf-sub">news.json·evidence·가이드 자료</span></div>
+        </div>
+      </div>
+      <div class="sf-flow"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16M6 14l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="sf-layer" data-layer="deploy">
+        <div class="sf-lh"><span class="sf-no">4</span><span class="sf-lt">빌드 · 배포 · 호스팅</span><span class="sf-ld">코드 실행 런타임</span></div>
+        <div class="sf-nodes">
+          <div class="sf-node" data-node="CF_WORKER">CF Worker<span class="sf-sub">포털·CI·자판기·뉴스레터</span></div>
+          <div class="sf-node" data-node="GH_PAGES">GitHub Pages<span class="sf-sub">MI · 2030</span></div>
+          <div class="sf-node" data-node="CF_PAGES">CF Pages<span class="sf-sub">My Space</span></div>
+          <div class="sf-node" data-node="RAILWAY">Railway<span class="sf-sub">보고서 자판기 · FastAPI</span></div>
+        </div>
+      </div>
+      <div class="sf-flow"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16M6 14l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="sf-layer" data-layer="gate">
+        <div class="sf-lh"><span class="sf-no">5</span><span class="sf-lt">접근 게이트 · 인증</span><span class="sf-ld">공통 통과 지점</span></div>
+        <div class="sf-nodes">
+          <div class="sf-node" data-node="DOMAIN">도메인 라우팅<span class="sf-sub">samsungda.net + 서브도메인</span></div>
+          <div class="sf-node" data-node="ZT">Zero Trust<span class="sf-sub">세션 게이트(403=세션만료)</span></div>
+          <div class="sf-node" data-node="SSO">SSO 3규칙<span class="sf-sub">SITE_PASSWORD→HMAC→쿠키 180일</span></div>
+        </div>
+      </div>
+      <div class="sf-flow"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16M6 14l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <div class="sf-layer" data-layer="user">
+        <div class="sf-lh"><span class="sf-no">6</span><span class="sf-lt">이용자 화면 · 최종 결과물</span><span class="sf-ld">여기를 눌러 경로 추적</span></div>
+        <div class="sf-nodes" id="sfUser"></div>
+      </div>
+    </div>
+    <div class="sf-legend">
+      <span><i class="sf-dot" style="background:var(--new)"></i> 선택한 결과물</span>
+      <span><i class="sf-dot" style="background:var(--panel);box-shadow:inset 0 0 0 1px var(--new)"></i> 경로 포함 요소</span>
+      <span><i class="sf-dot" style="background:var(--line)"></i> 이번 경로 미사용</span>
+    </div>
+  </section>
+
+  <script>
+  (function(){
+    var TOOLS=[
+      {id:"portal",name:"포털",path:["CF_WORKER","DOMAIN","ZT","SSO"]},
+      {id:"mi",name:"Market Sensing",path:["MI_NEWS","CLAUDE","GH_DATA","GH_PAGES","DOMAIN","ZT","SSO"]},
+      {id:"ci",name:"경쟁사 전략 추적",path:["MI_NEWS","CLAUDE","WEBSEARCH","R2","GH_DATA","CF_WORKER","DOMAIN","ZT","SSO"]},
+      {id:"2030",name:"2030 미래 전망",path:["CLAUDE","GH_PAGES","DOMAIN","ZT","SSO"]},
+      {id:"idea",name:"아이디어 자판기",path:["USER","CLAUDE","CF_WORKER","DOMAIN","ZT","SSO"]},
+      {id:"report",name:"보고서 자판기",path:["USER","CLAUDE","RAILWAY","DOMAIN","ZT","SSO"]},
+      {id:"guide",name:"클로드로 워드보고서 작성",path:["USER","GH_DATA","R2","CF_WORKER","DOMAIN","ZT","SSO"]},
+      {id:"quickshare",name:"Quick Share",path:["USER","R2","CF_WORKER","DOMAIN","ZT","SSO"]},
+      {id:"space",name:"My Space",path:["USER","R2","CF_PAGES","DOMAIN","ZT","SSO"]},
+      {id:"newsletter",name:"뉴스레터 모음",path:["MI_NEWS","YAHOO","FRED","CLAUDE","QUICKCHART","RULE","R2","CF_WORKER","DOMAIN","ZT","SSO"]}
+    ];
+    var LAYER_OF={MI_NEWS:"src",YAHOO:"src",FRED:"src",USER:"src",CLAUDE:"proc",WEBSEARCH:"proc",QUICKCHART:"proc",RULE:"proc",R2:"store",GH_DATA:"store",CF_WORKER:"deploy",GH_PAGES:"deploy",CF_PAGES:"deploy",RAILWAY:"deploy",DOMAIN:"gate",ZT:"gate",SSO:"gate"};
+    var root=document.getElementById("sysmap");
+    if(!root) return;
+    var pick=document.getElementById("sfPick");
+    var userNodes=document.getElementById("sfUser");
+    var current=null;
+    function q(s){return root.querySelector(s);}
+    function qa(s){return Array.prototype.slice.call(root.querySelectorAll(s));}
+    TOOLS.forEach(function(t){
+      var n=document.createElement("div");
+      n.className="sf-node user";n.setAttribute("data-tool",t.id);n.textContent=t.name;
+      n.addEventListener("click",function(){select(t.id);});
+      userNodes.appendChild(n);
+      var c=document.createElement("button");
+      c.type="button";c.className="sf-chip";c.setAttribute("data-tool",t.id);c.textContent=t.name;
+      c.addEventListener("click",function(){select(t.id);});
+      pick.appendChild(c);
+    });
+    var reset=document.createElement("button");
+    reset.type="button";reset.className="sf-chip reset";reset.textContent="전체 보기";
+    reset.addEventListener("click",clear);
+    pick.appendChild(reset);
+    function clearMarks(){
+      qa(".sf-node").forEach(function(n){n.classList.remove("hit","sel");});
+      qa(".sf-layer").forEach(function(l){l.classList.remove("live");});
+      qa(".sf-chip").forEach(function(c){c.classList.remove("on");});
+    }
+    function select(id){
+      if(current===id){clear();return;}
+      current=id;clearMarks();root.classList.add("filtering");
+      var tool=null;
+      TOOLS.forEach(function(t){if(t.id===id)tool=t;});
+      if(!tool) return;
+      var live={};
+      tool.path.forEach(function(nid){
+        var el=q('.sf-node[data-node="'+nid+'"]');
+        if(el) el.classList.add("hit");
+        if(LAYER_OF[nid]) live[LAYER_OF[nid]]=1;
+      });
+      Object.keys(live).forEach(function(lyr){
+        var l=q('.sf-layer[data-layer="'+lyr+'"]');
+        if(l) l.classList.add("live");
+      });
+      var u=q('.sf-node.user[data-tool="'+id+'"]');
+      if(u) u.classList.add("sel");
+      var ul=q('.sf-layer[data-layer="user"]');
+      if(ul) ul.classList.add("live");
+      var chip=q('.sf-chip[data-tool="'+id+'"]');
+      if(chip) chip.classList.add("on");
+    }
+    function clear(){current=null;root.classList.remove("filtering");clearMarks();}
+  })();
+  </script>
 
   <section class="frame">
     <div class="eyebrow">공유 인프라 — SHARED INFRASTRUCTURE</div>
