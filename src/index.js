@@ -666,6 +666,363 @@ async function handleToolUpdates(request, env, ctx) {
   return res;
 }
 
+// ══════════════════════════════════════════════════════════════════════════
+// 사이트 관리(/__admin) — 사이트 게이트(SITE_PASSWORD) 위에 얹는 2차 게이트.
+// 관리자 전용: ① API 비용 분석 ② 구독자·발송 현황 ③ 뉴스레터 프리뷰.
+// 스타일은 형제 격 내부 페이지(/__logs·로그인)와 동일한 기본 파랑 토큰을 사용.
+// ══════════════════════════════════════════════════════════════════════════
+const ADMIN_COOKIE = "da_admin_session";
+const ADMIN_MSG = "da-admin-auth-v1";
+const ADMIN_MAX_AGE = 60 * 60 * 12; // 12시간
+const NL_BASE = "https://samsungda-newsletter.cw120-park.workers.dev";
+
+function adminSessionToken(env) {
+  return hmacHex(env.ADMIN_PASSWORD, ADMIN_MSG);
+}
+async function isAdmin(request, env) {
+  const cookie = parseCookies(request.headers.get("cookie"))[ADMIN_COOKIE];
+  if (!cookie) return false;
+  return timingSafeEqual(cookie, await adminSessionToken(env));
+}
+
+function adminLoginPage(next, isError) {
+  const html = `<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>사이트 관리 — 로그인</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{--bg:#fff;--surface:#f6f7f9;--text:#1a1d21;--muted:#5b6470;--border:#e6e9ee;--brand:#1257d6}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--text);background:var(--bg);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .login{width:100%;max-width:360px;background:var(--surface);border:1.5px solid var(--border);border-radius:16px;padding:32px 28px}
+  h1{font-size:22px;font-weight:800;letter-spacing:-.5px;margin-bottom:8px}
+  .sub{color:var(--muted);font-size:15px;margin-bottom:22px}
+  input[type=password]{width:100%;font:inherit;font-size:15px;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;background:#fff;outline:none;transition:border-color .15s}
+  input[type=password]:focus{border-color:var(--brand)}
+  button{width:100%;margin-top:14px;font:inherit;font-size:15px;font-weight:700;color:#fff;background:var(--brand);border:none;border-radius:10px;padding:12px 14px;cursor:pointer;transition:opacity .15s}
+  button:hover{opacity:.92}
+  .err{color:#c0392b;font-size:15px;margin-bottom:14px}
+</style></head><body>
+  <form class="login" method="POST" action="/__admin/auth">
+    <h1>사이트 관리</h1>
+    <p class="sub">관리자 비밀번호를 입력하세요.</p>
+    ${isError ? '<p class="err">비밀번호가 올바르지 않습니다.</p>' : ""}
+    <input type="password" name="password" placeholder="관리자 비밀번호" autocomplete="current-password" autofocus required>
+    <input type="hidden" name="next" value="${escAttr(safeNextPath(next))}">
+    <button type="submit">입장</button>
+  </form>
+</body></html>`;
+  return new Response(html, { status: 401, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+}
+
+async function handleAdminLogin(request, env, url) {
+  let form;
+  try { form = await request.formData(); } catch { return adminLoginPage("/__admin", true); }
+  const password = String(form.get("password") || "");
+  let next = safeNextPath(String(form.get("next") || "/__admin"));
+  if (!next.startsWith("/__admin")) next = "/__admin";
+  if (!env.ADMIN_PASSWORD || !timingSafeEqual(password, env.ADMIN_PASSWORD)) return adminLoginPage(next, true);
+  const secure = url.protocol === "https:" ? "; Secure" : "";
+  const headers = new Headers({ Location: next });
+  headers.append("Set-Cookie", `${ADMIN_COOKIE}=${await adminSessionToken(env)}; Path=/__admin; Max-Age=${ADMIN_MAX_AGE}; HttpOnly; SameSite=Lax${cookieDomainAttr(url.hostname)}${secure}`);
+  return new Response(null, { status: 303, headers });
+}
+
+// ── 기능1: API 비용 — Export CSV 업로드/보관(R2 usage/) ──
+async function handleAdminUsage(request, env, sub) {
+  if (!env.RESEARCH) return json({ error: "R2 미설정" }, 503);
+  const PREFIX = "usage/";
+  if (request.method === "GET" && sub === "file") {
+    const key = new URL(request.url).searchParams.get("key") || "";
+    if (!key.startsWith(PREFIX)) return json({ error: "bad key" }, 400);
+    const obj = await env.RESEARCH.get(key);
+    if (!obj) return json({ error: "not found" }, 404);
+    return new Response(await obj.text(), { headers: { "content-type": "text/csv; charset=utf-8", "cache-control": "no-store" } });
+  }
+  if (request.method === "GET") {
+    const listed = await env.RESEARCH.list({ prefix: PREFIX });
+    const items = listed.objects
+      .map((o) => ({ key: o.key, name: o.key.slice(PREFIX.length), size: o.size, uploaded: o.uploaded }))
+      .sort((a, b) => new Date(b.uploaded) - new Date(a.uploaded));
+    return json(items);
+  }
+  if (request.method === "POST") {
+    let form;
+    try { form = await request.formData(); } catch { return json({ error: "expected multipart/form-data" }, 400); }
+    const file = form.get("file");
+    if (!file || typeof file.arrayBuffer !== "function") return json({ error: "missing file" }, 400);
+    const raw = String(file.name || "usage.csv").replace(/[^\w.\-]+/g, "_").slice(-60) || "usage.csv";
+    const key = PREFIX + Date.now().toString(36) + "-" + raw;
+    await env.RESEARCH.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: "text/csv; charset=utf-8" } });
+    return json({ key }, 201);
+  }
+  if (request.method === "DELETE") {
+    const key = new URL(request.url).searchParams.get("key") || "";
+    if (!key.startsWith(PREFIX)) return json({ error: "bad key" }, 400);
+    await env.RESEARCH.delete(key);
+    return new Response(null, { status: 204 });
+  }
+  return json({ error: "method not allowed" }, 405);
+}
+
+// ── 기능2: 구독자 현황 — 뉴스레터 Worker /recipients 프록시(TRIGGER_KEY) ──
+async function handleAdminRecipients(env) {
+  if (!env.NL_TRIGGER_KEY) return json({ error: "NL_TRIGGER_KEY 미설정" }, 503);
+  try {
+    const r = await fetch(`${NL_BASE}/recipients?key=${encodeURIComponent(env.NL_TRIGGER_KEY)}`);
+    if (!r.ok) return json({ error: "newsletter " + r.status }, 502);
+    return json(await r.json());
+  } catch (e) {
+    return json({ error: String(e) }, 502);
+  }
+}
+
+// ── 기능2: 발송현황 — R2 newsletter/reports/ (postsend.js가 저장) ──
+async function handleAdminDispatches(env) {
+  if (!env.RESEARCH) return json({ error: "R2 미설정" }, 503);
+  const listed = await env.RESEARCH.list({ prefix: "newsletter/reports/" });
+  const keys = listed.objects.map((o) => o.key).sort((a, b) => b.localeCompare(a)).slice(0, 60);
+  const out = [];
+  for (const k of keys) {
+    try {
+      const obj = await env.RESEARCH.get(k);
+      if (obj) out.push(JSON.parse(await obj.text()));
+    } catch { /* skip */ }
+  }
+  return json(out);
+}
+
+function renderAdminPage(env) {
+  const hasNL = !!env.NL_TRIGGER_KEY;
+  const html = `<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>사이트 관리</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{--bg:#fff;--surface:#f6f7f9;--text:#1a1d21;--muted:#5b6470;--border:#e6e9ee;--brand:#1257d6}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Pretendard",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:var(--text);background:var(--bg);padding:28px;max-width:940px;margin:0 auto}
+  h1{font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:4px}
+  .lede{color:var(--muted);font-size:14px;margin-bottom:20px}
+  .tabs{display:flex;gap:6px;border-bottom:1.5px solid var(--border);margin-bottom:22px;flex-wrap:wrap}
+  .tab{font:inherit;font-size:14px;font-weight:600;color:var(--muted);background:none;border:none;border-bottom:2px solid transparent;padding:9px 14px;margin-bottom:-1.5px;cursor:pointer;transition:color .15s,border-color .15s}
+  .tab:hover{color:var(--text)}
+  .tab.active{color:var(--brand);border-bottom-color:var(--brand)}
+  .panel{display:none}
+  .panel.active{display:block}
+  .dropzone{border:1.5px dashed var(--border);border-radius:14px;padding:26px;text-align:center;color:var(--muted);font-size:14px;cursor:pointer;transition:border-color .15s,background .15s}
+  .dropzone.over{border-color:var(--brand);background:rgba(18,87,214,.06)}
+  .cards{display:flex;gap:12px;margin:18px 0;flex-wrap:wrap}
+  .kcard{flex:1;min-width:150px;background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:15px 17px}
+  .kcard .k{color:var(--muted);font-size:13px;margin-bottom:6px}
+  .kcard .v{font-size:24px;font-weight:800;letter-spacing:-.6px;font-variant-numeric:tabular-nums}
+  .kcard .v small{font-size:14px;font-weight:600;color:var(--muted)}
+  h2{font-size:14px;font-weight:700;margin:22px 0 10px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:7px 9px;border-bottom:1px solid var(--border)}
+  th{color:var(--muted);font-weight:600}
+  td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+  .bar{height:7px;background:var(--brand);border-radius:4px;min-width:1px}
+  .barwrap{background:var(--surface);border-radius:4px;overflow:hidden}
+  .muted{color:var(--muted);font-size:13px}
+  .legend{color:var(--muted);font-size:12px;margin-top:14px;line-height:1.6}
+  .flist{list-style:none;margin:14px 0 0;padding:0;font-size:13px}
+  .flist li{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border)}
+  .flist a{color:var(--brand);text-decoration:none;cursor:pointer}
+  .flist .del{margin-left:auto;color:var(--muted);cursor:pointer;font-size:12px}
+  .flist .del:hover{color:#c0392b}
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:20px}
+  .ok{background:#e5f6ec;color:#1a7f43}
+  .fail{background:#fdeaea;color:#c0392b}
+  iframe{width:100%;height:640px;border:1.5px solid var(--border);border-radius:12px;background:#fff}
+  .empty{color:var(--muted);padding:18px 0}
+  .toplink{font-size:13px;color:var(--muted);text-decoration:none}
+  .toplink:hover{color:var(--brand)}
+  .err{color:#c0392b;font-size:13px}
+</style></head><body>
+  <h1>사이트 관리</h1>
+  <p class="lede">기획도구 모음 운영 관리 · <a class="toplink" href="/">← 포털로</a> · <a class="toplink" href="/__logs">접속 로그</a></p>
+  <div class="tabs">
+    <button class="tab active" data-t="cost">API 비용</button>
+    <button class="tab" data-t="subs">구독자 · 발송</button>
+    <button class="tab" data-t="nl">뉴스레터 프리뷰</button>
+  </div>
+
+  <section class="panel active" id="p-cost">
+    <div class="dropzone" id="drop">콘솔 Export CSV를 여기에 끌어다 놓거나 클릭해 업로드<input type="file" id="file" accept=".csv" hidden></div>
+    <div id="cost-err" class="err"></div>
+    <div id="cost-out"></div>
+    <div class="legend">단가(USD, 표준 티어·100만 토큰당): Opus $5/$25 · Sonnet $3/$15 · Haiku $1/$5 · 캐시쓰기 ×1.25(5m)/×2(1h) · 캐시읽기 ×0.1 · 웹서치 $0.01/건. 실제 청구와 정합하려면 소스의 단가표를 최신 pricing으로 조정.</div>
+    <h2>보관된 파일</h2>
+    <ul class="flist" id="flist"><li class="empty">불러오는 중…</li></ul>
+  </section>
+
+  <section class="panel" id="p-subs">
+    <div class="cards" id="subs-cards"><div class="kcard"><div class="k">불러오는 중…</div><div class="v">—</div></div></div>
+    <div id="subs-err" class="err"></div>
+    <h2>수신자 목록</h2>
+    <table id="subs-table"><thead><tr><th>#</th><th>주소</th><th>구분</th></tr></thead><tbody><tr><td colspan="3" class="empty">불러오는 중…</td></tr></tbody></table>
+    <h2>발송현황 (최근)</h2>
+    <table id="disp-table"><thead><tr><th>날짜</th><th class="n">전체</th><th class="n">성공</th><th class="n">실패</th></tr></thead><tbody><tr><td colspan="4" class="empty">불러오는 중…</td></tr></tbody></table>
+  </section>
+
+  <section class="panel" id="p-nl">
+    <p class="muted" id="nl-note">발송은 보류(hold) 상태입니다. 아래는 오늘자 기준 렌더 미리보기입니다(실발송 아님).</p>
+    ${hasNL ? `<iframe src="${NL_BASE}/preview" title="뉴스레터 미리보기"></iframe>` : '<p class="empty">NL_TRIGGER_KEY 미설정 — 미리보기를 표시하려면 시크릿을 추가하세요.</p>'}
+  </section>
+
+<script>
+(function(){
+  var $=function(s,r){return (r||document).querySelector(s);};
+  var fmt=function(n){return (n||0).toLocaleString('en-US');};
+  var usd=function(n){return '$'+(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});};
+  function esc(s){return String(s==null?'':s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+  // 탭
+  var tabs=document.querySelectorAll('.tab'), loaded={};
+  tabs.forEach(function(t){t.addEventListener('click',function(){
+    tabs.forEach(function(x){x.classList.remove('active');});
+    document.querySelectorAll('.panel').forEach(function(x){x.classList.remove('active');});
+    t.classList.add('active'); $('#p-'+t.dataset.t).classList.add('active');
+    if(t.dataset.t==='subs' && !loaded.subs){loaded.subs=1; loadSubs();}
+  });});
+
+  // ── 단가 ──
+  function priceFor(m){ m=(m||'').toLowerCase();
+    if(m.indexOf('opus')>-1) return {i:5,o:25};
+    if(m.indexOf('haiku')>-1) return {i:1,o:5};
+    if(m.indexOf('sonnet')>-1) return {i:3,o:15};
+    return {i:3,o:15};
+  }
+  var CW5=1.25, CW1H=2, CR=0.1, WEB=0.01;
+
+  // ── CSV 파싱(콘솔 Export 스키마) ──
+  function parseCSV(text){
+    var lines=text.replace(/\r/g,'').split('\n').filter(function(l){return l.trim();});
+    if(!lines.length) return {rows:[],header:[]};
+    var header=lines[0].split(',');
+    var idx={}; header.forEach(function(h,i){idx[h.trim()]=i;});
+    var rows=lines.slice(1).map(function(l){
+      var c=l.split(','); var g=function(k){return c[idx[k]];};
+      var num=function(k){var v=parseFloat(g(k));return isNaN(v)?0:v;};
+      return {
+        date:(g('usage_date_utc')||'').trim(),
+        model:(g('model_version')||'').trim(),
+        key:(g('api_key')||'').trim(),
+        no_cache:num('usage_input_tokens_no_cache'),
+        cw5:num('usage_input_tokens_cache_write_5m'),
+        cw1h:num('usage_input_tokens_cache_write_1h'),
+        cr:num('usage_input_tokens_cache_read'),
+        out:num('usage_output_tokens'),
+        web:num('web_search_count')
+      };
+    });
+    return {rows:rows,header:header};
+  }
+  function rowCost(r){var p=priceFor(r.model);
+    return (r.no_cache*p.i + r.cw5*p.i*CW5 + r.cw1h*p.i*CW1H + r.cr*p.i*CR + r.out*p.o)/1e6 + r.web*WEB;
+  }
+  function analyze(text){
+    var parsed=parseCSV(text); var rows=parsed.rows;
+    if(!rows.length){ $('#cost-err').textContent='CSV에서 데이터 행을 찾지 못했습니다.'; return; }
+    $('#cost-err').textContent='';
+    var tot={cost:0,inTok:0,out:0,web:0}, byModel={}, byTool={}, byDate={};
+    rows.forEach(function(r){
+      var cost=rowCost(r); var inTok=r.no_cache+r.cw5+r.cw1h+r.cr;
+      tot.cost+=cost; tot.inTok+=inTok; tot.out+=r.out; tot.web+=r.web;
+      (byModel[r.model]=byModel[r.model]||{cost:0,inTok:0,out:0,web:0,n:0}); var m=byModel[r.model]; m.cost+=cost;m.inTok+=inTok;m.out+=r.out;m.web+=r.web;m.n++;
+      (byTool[r.key]=byTool[r.key]||{cost:0,n:0}); byTool[r.key].cost+=cost; byTool[r.key].n++;
+      (byDate[r.date]=byDate[r.date]||{cost:0}); byDate[r.date].cost+=cost;
+    });
+    var dates=Object.keys(byDate).sort();
+    var maxDay=Math.max.apply(null,dates.map(function(d){return byDate[d].cost;}).concat([0.0001]));
+    var range=dates.length?(dates[0]+' ~ '+dates[dates.length-1]):'';
+    var h='';
+    h+='<div class="cards">'
+      +'<div class="kcard"><div class="k">총 비용 ('+esc(range)+')</div><div class="v">'+usd(tot.cost)+'</div></div>'
+      +'<div class="kcard"><div class="k">입력 토큰</div><div class="v">'+fmt(tot.inTok)+'</div></div>'
+      +'<div class="kcard"><div class="k">출력 토큰</div><div class="v">'+fmt(tot.out)+'</div></div>'
+      +'<div class="kcard"><div class="k">웹서치</div><div class="v">'+fmt(tot.web)+'</div></div>'
+      +'</div>';
+    // 모델별
+    var mk=Object.keys(byModel).sort(function(a,b){return byModel[b].cost-byModel[a].cost;});
+    h+='<h2>모델별</h2><table><thead><tr><th>모델</th><th class="n">건수</th><th class="n">입력</th><th class="n">출력</th><th class="n">웹서치</th><th class="n">비용</th><th class="n">비중</th></tr></thead><tbody>';
+    mk.forEach(function(k){var m=byModel[k];h+='<tr><td>'+esc(k)+'</td><td class="n">'+fmt(m.n)+'</td><td class="n">'+fmt(m.inTok)+'</td><td class="n">'+fmt(m.out)+'</td><td class="n">'+fmt(m.web)+'</td><td class="n">'+usd(m.cost)+'</td><td class="n">'+(tot.cost?Math.round(m.cost/tot.cost*100):0)+'%</td></tr>';});
+    h+='</tbody></table>';
+    // 도구(api_key)별
+    var tk=Object.keys(byTool).sort(function(a,b){return byTool[b].cost-byTool[a].cost;});
+    h+='<h2>도구(API 키)별</h2><table><thead><tr><th>API 키</th><th class="n">건수</th><th class="n">비용</th><th class="n">비중</th></tr></thead><tbody>';
+    tk.forEach(function(k){var t=byTool[k];h+='<tr><td>'+esc(k||'(미상)')+'</td><td class="n">'+fmt(t.n)+'</td><td class="n">'+usd(t.cost)+'</td><td class="n">'+(tot.cost?Math.round(t.cost/tot.cost*100):0)+'%</td></tr>';});
+    h+='</tbody></table>';
+    // 일자별
+    h+='<h2>일자별 추이</h2><table><thead><tr><th>날짜</th><th class="n">비용</th><th style="width:45%">&nbsp;</th></tr></thead><tbody>';
+    dates.forEach(function(d){var c=byDate[d].cost;var w=Math.round(c/maxDay*100);h+='<tr><td>'+esc(d)+'</td><td class="n">'+usd(c)+'</td><td><div class="barwrap"><div class="bar" style="width:'+w+'%"></div></div></td></tr>';});
+    h+='</tbody></table>';
+    $('#cost-out').innerHTML=h;
+  }
+
+  // ── 업로드/드롭 ──
+  var drop=$('#drop'), fileInput=$('#file');
+  drop.addEventListener('click',function(){fileInput.click();});
+  ['dragenter','dragover'].forEach(function(e){drop.addEventListener(e,function(ev){ev.preventDefault();drop.classList.add('over');});});
+  ['dragleave','drop'].forEach(function(e){drop.addEventListener(e,function(ev){ev.preventDefault();drop.classList.remove('over');});});
+  drop.addEventListener('drop',function(ev){if(ev.dataTransfer.files[0])handleFile(ev.dataTransfer.files[0]);});
+  fileInput.addEventListener('change',function(){if(fileInput.files[0])handleFile(fileInput.files[0]);});
+  function handleFile(f){
+    var rd=new FileReader();
+    rd.onload=function(){ analyze(String(rd.result)); upload(f); };
+    rd.readAsText(f);
+  }
+  function upload(f){
+    var fd=new FormData(); fd.append('file',f);
+    fetch('/__admin/api/usage',{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(){loadFiles();}).catch(function(){});
+  }
+  function loadFiles(){
+    fetch('/__admin/api/usage').then(function(r){return r.json();}).then(function(items){
+      var ul=$('#flist');
+      if(!items.length){ul.innerHTML='<li class="empty">아직 업로드된 파일이 없습니다.</li>';return;}
+      ul.innerHTML=items.map(function(it){
+        return '<li><a data-key="'+esc(it.key)+'" class="open">'+esc(it.name)+'</a> <span class="muted">'+Math.round(it.size/1024)+'KB · '+new Date(it.uploaded).toLocaleDateString('ko-KR')+'</span><span class="del" data-key="'+esc(it.key)+'">삭제</span></li>';
+      }).join('');
+      ul.querySelectorAll('.open').forEach(function(a){a.addEventListener('click',function(){
+        fetch('/__admin/api/usage/file?key='+encodeURIComponent(a.dataset.key)).then(function(r){return r.text();}).then(analyze);
+      });});
+      ul.querySelectorAll('.del').forEach(function(d){d.addEventListener('click',function(){
+        fetch('/__admin/api/usage?key='+encodeURIComponent(d.dataset.key),{method:'DELETE'}).then(function(){loadFiles();});
+      });});
+    }).catch(function(){$('#flist').innerHTML='<li class="empty">목록을 불러오지 못했습니다.</li>';});
+  }
+  loadFiles();
+
+  // ── 구독자·발송 ──
+  function loadSubs(){
+    fetch('/__admin/api/recipients').then(function(r){return r.json();}).then(function(d){
+      if(d.error){$('#subs-err').textContent='구독자 조회 실패: '+d.error;return;}
+      $('#subs-cards').innerHTML=''
+        +'<div class="kcard"><div class="k">전체 수신자</div><div class="v">'+fmt(d.count)+'<small> 명</small></div></div>'
+        +'<div class="kcard"><div class="k">고정(RECIPIENTS)</div><div class="v">'+fmt(d.fixed)+'</div></div>'
+        +'<div class="kcard"><div class="k">구독</div><div class="v">'+fmt(d.subscribed)+'</div></div>';
+      var rows=(d.recipients||[]).map(function(r,i){
+        var lab=r.source==='both'?'고정+구독':r.source==='fixed'?'고정':'구독';
+        return '<tr><td>'+(i+1)+'</td><td style="font-family:monospace">'+esc(r.email)+'</td><td>'+lab+'</td></tr>';
+      }).join('');
+      $('#subs-table').querySelector('tbody').innerHTML=rows||'<tr><td colspan="3" class="empty">수신자가 없습니다.</td></tr>';
+    }).catch(function(e){$('#subs-err').textContent='구독자 조회 실패';});
+    fetch('/__admin/api/dispatches').then(function(r){return r.json();}).then(function(list){
+      if(!list.length){$('#disp-table').querySelector('tbody').innerHTML='<tr><td colspan="4" class="empty">저장된 발송 리포트가 없습니다. (postsend 저장 반영 이후부터 집계)</td></tr>';return;}
+      $('#disp-table').querySelector('tbody').innerHTML=list.map(function(r){
+        var fail=(r.stillMissing?r.stillMissing.length:(r.intended-r.sent))||0;
+        return '<tr><td>'+esc(r.date)+'</td><td class="n">'+fmt(r.intended)+'</td><td class="n"><span class="badge ok">'+fmt(r.sent)+'</span></td><td class="n">'+(fail?'<span class="badge fail">'+fmt(fail)+'</span>':'0')+'</td></tr>';
+      }).join('');
+    }).catch(function(){$('#disp-table').querySelector('tbody').innerHTML='<tr><td colspan="4" class="empty">발송현황을 불러오지 못했습니다.</td></tr>';});
+  }
+})();
+</script>
+</body></html>`;
+  return new Response(html, { status: 200, headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" } });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -684,6 +1041,26 @@ export default {
 
     // 인증을 통과한 실제 접속만 기록한다(로그인 페이지에서 튕긴 요청은 제외).
     logAccess(env, ctx, request, url);
+
+    // ── 사이트 관리(/__admin) — SITE_PASSWORD 게이트 위 2차 게이트(ADMIN_PASSWORD) ──
+    if (path === "/__admin/auth" && request.method === "POST") {
+      return handleAdminLogin(request, env, url);
+    }
+    if (path === "/__admin" || path.startsWith("/__admin/")) {
+      if (!env.ADMIN_PASSWORD) {
+        return new Response("ADMIN_PASSWORD 시크릿이 설정되지 않았습니다.", { status: 503, headers: TEXT });
+      }
+      if (!(await isAdmin(request, env))) {
+        return adminLoginPage(path, false);
+      }
+      if (path === "/__admin" || path === "/__admin/") return renderAdminPage(env);
+      if (path === "/__admin/api/usage" || path.startsWith("/__admin/api/usage/")) {
+        return handleAdminUsage(request, env, path.slice("/__admin/api/usage".length).replace(/^\//, ""));
+      }
+      if (path === "/__admin/api/recipients") return handleAdminRecipients(env);
+      if (path === "/__admin/api/dispatches") return handleAdminDispatches(env);
+      return json({ error: "not found" }, 404);
+    }
 
     // 관리자용 접속 로그 조회 페이지(이미 사이트 비밀번호 게이트로 보호됨)
     if (path === "/__logs" && request.method === "GET") {
