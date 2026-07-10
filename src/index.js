@@ -766,6 +766,87 @@ async function handleAdminUsage(request, env, sub) {
   return json({ error: "method not allowed" }, 405);
 }
 
+// ── 기능1b: 실시간 사용량/비용 — Anthropic Admin API (ANTHROPIC_ADMIN_KEY) ──
+async function adminApiCall(env, pathQuery) {
+  const r = await fetch("https://api.anthropic.com" + pathQuery, {
+    headers: {
+      "x-api-key": env.ANTHROPIC_ADMIN_KEY,
+      "anthropic-version": "2023-06-01",
+    },
+  });
+  if (!r.ok) {
+    const body = await r.text().catch(() => "");
+    throw new Error("admin " + r.status + " " + body.slice(0, 200));
+  }
+  return r.json();
+}
+
+async function handleAdminLive(env) {
+  if (!env.ANTHROPIC_ADMIN_KEY) {
+    return json({ error: "ANTHROPIC_ADMIN_KEY 미설정 — Console에서 Admin 키를 발급해 Worker 시크릿에 등록하세요." }, 503);
+  }
+  const now = new Date();
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+  try {
+    // 사용량 리포트(일자·모델·API키별) → 콘솔 Export CSV 스키마로 재구성
+    const usageRows = [];
+    let page = null;
+    for (let i = 0; i < 20; i++) {
+      const p = new URLSearchParams();
+      p.set("starting_at", start);
+      p.set("bucket_width", "1d");
+      p.set("limit", "31");
+      p.append("group_by[]", "model");
+      p.append("group_by[]", "api_key_id");
+      if (page) p.set("page", page);
+      const data = await adminApiCall(env, "/v1/organizations/usage_report/messages?" + p.toString());
+      for (const bucket of data.data || []) {
+        const date = String(bucket.starting_at || "").slice(0, 10);
+        for (const res of bucket.results || []) usageRows.push({ date, res });
+      }
+      if (!data.has_more || !data.next_page) break;
+      page = data.next_page;
+    }
+    const cols = ["usage_date_utc", "model_version", "api_key", "usage_input_tokens_no_cache", "usage_input_tokens_cache_write_5m", "usage_input_tokens_cache_write_1h", "usage_input_tokens_cache_read", "usage_output_tokens", "web_search_count"];
+    let csv = cols.join(",") + "\n";
+    for (const { date, res } of usageRows) {
+      const cc = res.cache_creation || {};
+      const st = res.server_tool_use || {};
+      csv += [
+        date,
+        res.model || "",
+        res.api_key_id || "",
+        res.uncached_input_tokens || 0,
+        cc.ephemeral_5m_input_tokens || 0,
+        cc.ephemeral_1h_input_tokens || 0,
+        res.cache_read_input_tokens || 0,
+        res.output_tokens || 0,
+        st.web_search_requests || 0,
+      ].join(",") + "\n";
+    }
+    // 비용 리포트 — amount는 최소 통화 단위(센트) 문자열이라 100으로 나눠 USD 환산
+    let costCents = 0, gotCost = true, page2 = null;
+    try {
+      for (let i = 0; i < 20; i++) {
+        const p = new URLSearchParams();
+        p.set("starting_at", start);
+        p.set("bucket_width", "1d");
+        p.set("limit", "31");
+        if (page2) p.set("page", page2);
+        const data = await adminApiCall(env, "/v1/organizations/cost_report?" + p.toString());
+        for (const bucket of data.data || []) {
+          for (const res of bucket.results || []) costCents += parseFloat(res.amount) || 0;
+        }
+        if (!data.has_more || !data.next_page) break;
+        page2 = data.next_page;
+      }
+    } catch (e) { gotCost = false; }
+    return json({ csv, realCostUsd: gotCost ? costCents / 100 : null, start });
+  } catch (e) {
+    return json({ error: String((e && e.message) || e) }, 502);
+  }
+}
+
 // ── 기능2: 구독자 현황 — 뉴스레터 Worker /recipients 프록시(TRIGGER_KEY) ──
 async function handleAdminRecipients(env) {
   if (!env.NL_TRIGGER_KEY) return json({ error: "NL_TRIGGER_KEY 미설정" }, 503);
@@ -841,6 +922,9 @@ function renderAdminPage(env) {
   .toplink{font-size:13px;color:var(--muted);text-decoration:none}
   .toplink:hover{color:var(--brand)}
   .err{color:#c0392b;font-size:13px}
+  .btn{font:inherit;font-size:13px;font-weight:600;color:#fff;background:var(--brand);border:none;border-radius:9px;padding:9px 15px;cursor:pointer}
+  .btn:disabled{opacity:.55;cursor:default}
+  .liverow{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
 </style></head><body>
   <h1>사이트 관리</h1>
   <p class="lede">기획도구 모음 운영 관리 · <a class="toplink" href="/">← 포털로</a> · <a class="toplink" href="/__logs">접속 로그</a></p>
@@ -851,7 +935,11 @@ function renderAdminPage(env) {
   </div>
 
   <section class="panel active" id="p-cost">
-    <div class="dropzone" id="drop">콘솔 Export CSV를 여기에 끌어다 놓거나 클릭해 업로드<input type="file" id="file" accept=".csv" hidden></div>
+    <div class="liverow">
+      <button class="btn" id="live">이번 달 실시간 불러오기</button>
+      <span class="muted" id="live-status"></span>
+    </div>
+    <div class="dropzone" id="drop">또는 콘솔 Export CSV를 여기에 끌어다 놓거나 클릭해 업로드<input type="file" id="file" accept=".csv" hidden></div>
     <div id="cost-err" class="err"></div>
     <div id="cost-out"></div>
     <div class="legend">단가(USD, 표준 티어·100만 토큰당): Opus $5/$25 · Sonnet $3/$15 · Haiku $1/$5 · 캐시쓰기 ×1.25(5m)/×2(1h) · 캐시읽기 ×0.1 · 웹서치 $0.01/건. 실제 청구와 정합하려면 소스의 단가표를 최신 pricing으로 조정.</div>
@@ -923,9 +1011,9 @@ function renderAdminPage(env) {
   function rowCost(r){var p=priceFor(r.model);
     return (r.no_cache*p.i + r.cw5*p.i*CW5 + r.cw1h*p.i*CW1H + r.cr*p.i*CR + r.out*p.o)/1e6 + r.web*WEB;
   }
-  function analyze(text){
+  function analyze(text,realTotal){
     var parsed=parseCSV(text); var rows=parsed.rows;
-    if(!rows.length){ $('#cost-err').textContent='CSV에서 데이터 행을 찾지 못했습니다.'; return; }
+    if(!rows.length){ $('#cost-err').textContent='데이터 행을 찾지 못했습니다.'; return; }
     $('#cost-err').textContent='';
     var tot={cost:0,inTok:0,out:0,web:0}, byModel={}, byTool={}, byDate={};
     rows.forEach(function(r){
@@ -938,9 +1026,12 @@ function renderAdminPage(env) {
     var dates=Object.keys(byDate).sort();
     var maxDay=Math.max.apply(null,dates.map(function(d){return byDate[d].cost;}).concat([0.0001]));
     var range=dates.length?(dates[0]+' ~ '+dates[dates.length-1]):'';
+    var hasReal=(realTotal!=null && !isNaN(realTotal));
+    var costLabel=(hasReal?'총 비용 · 실제 청구':'총 비용 · 추정')+' ('+esc(range)+')';
+    var costVal=hasReal?usd(realTotal):usd(tot.cost);
     var h='';
     h+='<div class="cards">'
-      +'<div class="kcard"><div class="k">총 비용 ('+esc(range)+')</div><div class="v">'+usd(tot.cost)+'</div></div>'
+      +'<div class="kcard"><div class="k">'+costLabel+'</div><div class="v">'+costVal+'</div></div>'
       +'<div class="kcard"><div class="k">입력 토큰</div><div class="v">'+fmt(tot.inTok)+'</div></div>'
       +'<div class="kcard"><div class="k">출력 토큰</div><div class="v">'+fmt(tot.out)+'</div></div>'
       +'<div class="kcard"><div class="k">웹서치</div><div class="v">'+fmt(tot.web)+'</div></div>'
@@ -994,6 +1085,21 @@ function renderAdminPage(env) {
     }).catch(function(){$('#flist').innerHTML='<li class="empty">목록을 불러오지 못했습니다.</li>';});
   }
   loadFiles();
+
+  // ── 실시간 사용량/비용(Admin API) ──
+  var liveBtn=$('#live'), liveStatus=$('#live-status');
+  function loadLive(silent){
+    if(liveBtn) liveBtn.disabled=true;
+    if(liveStatus) liveStatus.textContent='불러오는 중…';
+    fetch('/__admin/api/live').then(function(r){return r.json();}).then(function(d){
+      if(liveBtn) liveBtn.disabled=false;
+      if(d.error){ if(liveStatus) liveStatus.textContent=silent?'':('실시간 조회 불가: '+d.error); return; }
+      if(liveStatus) liveStatus.textContent='실시간 반영됨 · '+String(d.start||'').slice(0,7)+(d.realCostUsd==null?' (비용은 추정)':'');
+      analyze(d.csv, d.realCostUsd);
+    }).catch(function(){ if(liveBtn) liveBtn.disabled=false; if(liveStatus&&!silent) liveStatus.textContent='실시간 조회 실패'; });
+  }
+  if(liveBtn) liveBtn.addEventListener('click',function(){loadLive(false);});
+  loadLive(true);
 
   // ── 구독자·발송 ──
   function loadSubs(){
@@ -1057,6 +1163,7 @@ export default {
       if (path === "/__admin/api/usage" || path.startsWith("/__admin/api/usage/")) {
         return handleAdminUsage(request, env, path.slice("/__admin/api/usage".length).replace(/^\//, ""));
       }
+      if (path === "/__admin/api/live") return handleAdminLive(env);
       if (path === "/__admin/api/recipients") return handleAdminRecipients(env);
       if (path === "/__admin/api/dispatches") return handleAdminDispatches(env);
       return json({ error: "not found" }, 404);
