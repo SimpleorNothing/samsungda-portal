@@ -836,7 +836,7 @@ function renderAdminPage(env) {
   .badge{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:20px}
   .ok{background:#e5f6ec;color:#1a7f43}
   .fail{background:#fdeaea;color:#c0392b}
-  iframe{width:100%;height:640px;border:1.5px solid var(--border);border-radius:12px;background:#fff}
+  iframe{width:100%;height:calc(100vh - 210px);min-height:640px;border:1.5px solid var(--border);border-radius:12px;background:#fff}
   .empty{color:var(--muted);padding:18px 0}
   .toplink{font-size:13px;color:var(--muted);text-decoration:none}
   .toplink:hover{color:var(--brand)}
