@@ -220,11 +220,16 @@ async function handleResearchApi(request, env, id) {
   if (!id) {
     if (request.method === "GET") {
       const listed = await env.RESEARCH.list({ include: ["customMetadata", "httpMetadata"] });
-      // report-idea의 아이디어 뱅크(idea-bank/ prefix)는 같은 버킷을 공유하지만
-      // 이 파일 목록의 대상이 아니다. report-idea가 직접 CRUD하며 파일별 삭제
-      // 비밀번호가 없어 여기선 삭제할 수도 없으므로 목록에서 제외한다.
+      // 같은 버킷(samsungda-research)을 여러 도구가 prefix로 네임스페이스를 나눠
+      // 공유한다. "조사 결과물 모음"은 사용자가 올린 보고서만 보여야 하므로 다른
+      // 도구가 소유한 prefix는 목록에서 제외한다(파일별 삭제 비밀번호도 없어 여기선
+      // 삭제 불가):
+      //   idea-bank/   report-idea 아이디어 뱅크(직접 CRUD)
+      //   usage/       사이트 관리(__admin) API 비용 Export CSV — 운영 전용,
+      //                사이트 관리에서만 다루며 공개 목록에는 노출하지 않는다.
+      const SKIP_PREFIXES = ["idea-bank/", "usage/"];
       const items = listed.objects
-        .filter((o) => !o.key.startsWith("idea-bank/"))
+        .filter((o) => !SKIP_PREFIXES.some((p) => o.key.startsWith(p)))
         .map((o) => ({
         id: o.key,
         title: o.customMetadata?.title ? decodeURIComponent(o.customMetadata.title) : o.key,
