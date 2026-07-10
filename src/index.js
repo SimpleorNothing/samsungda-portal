@@ -899,7 +899,7 @@ function renderAdminPage(env) {
 
   // ── CSV 파싱(콘솔 Export 스키마) ──
   function parseCSV(text){
-    var lines=text.replace(/\r/g,'').split('\n').filter(function(l){return l.trim();});
+    var lines=text.replace(/\\r/g,'').split('\\n').filter(function(l){return l.trim();});
     if(!lines.length) return {rows:[],header:[]};
     var header=lines[0].split(',');
     var idx={}; header.forEach(function(h,i){idx[h.trim()]=i;});
