@@ -912,6 +912,17 @@ function renderAdminPage(env) {
   td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
   .bar{height:7px;background:var(--brand);border-radius:4px;min-width:1px}
   .barwrap{background:var(--surface);border-radius:4px;overflow:hidden}
+  tr.dhead{cursor:pointer}
+  tr.dhead:hover>td{background:var(--surface)}
+  tr.dhead.open>td{background:var(--surface)}
+  .caret{display:inline-block;width:11px;color:var(--muted);font-size:9px;margin-right:5px;transition:transform .15s}
+  tr.dhead.open .caret{transform:rotate(90deg)}
+  tr.drow{display:none}
+  tr.drow.open{display:table-row}
+  tr.drow>td{padding:0 9px 12px;background:var(--surface)}
+  table.sub{width:100%;border-collapse:collapse;font-size:12.5px;background:var(--bg);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  table.sub th,table.sub td{padding:6px 9px;border-bottom:1px solid var(--border)}
+  table.sub tbody tr:last-child td{border-bottom:none}
   .muted{color:var(--muted);font-size:13px}
   .legend{color:var(--muted);font-size:12px;margin-top:14px;line-height:1.6}
   .flist{list-style:none;margin:14px 0 0;padding:0;font-size:13px}
@@ -1026,7 +1037,9 @@ function renderAdminPage(env) {
       tot.cost+=cost; tot.inTok+=inTok; tot.out+=r.out; tot.web+=r.web;
       (byModel[r.model]=byModel[r.model]||{cost:0,inTok:0,out:0,web:0,n:0}); var m=byModel[r.model]; m.cost+=cost;m.inTok+=inTok;m.out+=r.out;m.web+=r.web;m.n++;
       (byTool[r.key]=byTool[r.key]||{cost:0,n:0}); byTool[r.key].cost+=cost; byTool[r.key].n++;
-      (byDate[r.date]=byDate[r.date]||{cost:0}); byDate[r.date].cost+=cost;
+      (byDate[r.date]=byDate[r.date]||{cost:0,keys:{}}); var dd=byDate[r.date]; dd.cost+=cost;
+      (dd.keys[r.key]=dd.keys[r.key]||{cost:0,n:0,inTok:0,out:0,web:0}); var dk=dd.keys[r.key];
+      dk.cost+=cost; dk.n++; dk.inTok+=inTok; dk.out+=r.out; dk.web+=r.web;
     });
     var dates=Object.keys(byDate).sort();
     var maxDay=Math.max.apply(null,dates.map(function(d){return byDate[d].cost;}).concat([0.0001]));
@@ -1051,11 +1064,32 @@ function renderAdminPage(env) {
     h+='<h2>도구(API 키)별</h2><table><thead><tr><th>API 키</th><th class="n">건수</th><th class="n">비용</th><th class="n">비중</th></tr></thead><tbody>';
     tk.forEach(function(k){var t=byTool[k];h+='<tr><td>'+esc(k||'(미상)')+'</td><td class="n">'+fmt(t.n)+'</td><td class="n">'+usd(t.cost)+'</td><td class="n">'+(tot.cost?Math.round(t.cost/tot.cost*100):0)+'%</td></tr>';});
     h+='</tbody></table>';
-    // 일자별
-    h+='<h2>일자별 추이</h2><table><thead><tr><th>날짜</th><th class="n">비용</th><th style="width:45%">&nbsp;</th></tr></thead><tbody>';
-    dates.forEach(function(d){var c=byDate[d].cost;var w=Math.round(c/maxDay*100);h+='<tr><td>'+esc(d)+'</td><td class="n">'+usd(c)+'</td><td><div class="barwrap"><div class="bar" style="width:'+w+'%"></div></div></td></tr>';});
+    // 일자별 (날짜 클릭 → API 키별 드릴다운, 비용 많은 순)
+    h+='<h2>일자별 추이</h2><p class="muted" style="margin:-4px 0 9px">날짜를 누르면 그날의 API 키별 사용량이 많은 순으로 펼쳐집니다.</p>';
+    h+='<table id="daily"><thead><tr><th>날짜</th><th class="n">비용</th><th style="width:45%">&nbsp;</th></tr></thead><tbody>';
+    dates.forEach(function(d,i){
+      var dd=byDate[d]; var c=dd.cost; var w=Math.round(c/maxDay*100);
+      h+='<tr class="dhead" data-i="'+i+'"><td><span class="caret">&#9654;</span>'+esc(d)+'</td><td class="n">'+usd(c)+'</td><td><div class="barwrap"><div class="bar" style="width:'+w+'%"></div></div></td></tr>';
+      var ks=Object.keys(dd.keys).sort(function(a,b){return dd.keys[b].cost-dd.keys[a].cost;});
+      var sub='<table class="sub"><thead><tr><th>API 키</th><th class="n">건수</th><th class="n">입력</th><th class="n">출력</th><th class="n">웹서치</th><th class="n">비용</th><th class="n">비중</th></tr></thead><tbody>';
+      if(!ks.length){ sub+='<tr><td colspan="7" class="muted">데이터 없음</td></tr>'; }
+      ks.forEach(function(k){var t=dd.keys[k];
+        sub+='<tr><td>'+esc(k||'(미상)')+'</td><td class="n">'+fmt(t.n)+'</td><td class="n">'+fmt(t.inTok)+'</td><td class="n">'+fmt(t.out)+'</td><td class="n">'+fmt(t.web)+'</td><td class="n">'+usd(t.cost)+'</td><td class="n">'+(c?Math.round(t.cost/c*100):0)+'%</td></tr>';
+      });
+      sub+='</tbody></table>';
+      h+='<tr class="drow" data-i="'+i+'"><td colspan="3">'+sub+'</td></tr>';
+    });
     h+='</tbody></table>';
     $('#cost-out').innerHTML=h;
+    // 드릴다운 토글
+    var out=$('#cost-out');
+    out.querySelectorAll('tr.dhead').forEach(function(tr){
+      tr.addEventListener('click',function(){
+        var row=out.querySelector('tr.drow[data-i="'+tr.dataset.i+'"]');
+        var on=tr.classList.toggle('open');
+        if(row) row.classList.toggle('open',on);
+      });
+    });
   }
 
   // ── 업로드/드롭 ──
