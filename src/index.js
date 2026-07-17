@@ -955,10 +955,10 @@ function renderAdminPage(env) {
       <button class="btn" id="live">이번 달 실시간 불러오기</button>
       <span class="muted" id="live-status"></span>
     </div>
-    <div class="dropzone" id="drop">또는 콘솔 Export CSV를 여기에 끌어다 놓거나 클릭해 업로드<input type="file" id="file" accept=".csv" hidden></div>
+    <div class="dropzone" id="drop">또는 콘솔 사용량 CSV / 비용 Export CSV를 여기에 끌어다 놓거나 클릭해 업로드<input type="file" id="file" accept=".csv" hidden></div>
     <div id="cost-err" class="err"></div>
     <div id="cost-out"></div>
-    <div class="legend">단가(USD, 표준 티어·100만 토큰당): Opus $5/$25 · Sonnet $3/$15 · Haiku $1/$5 · 캐시쓰기 ×1.25(5m)/×2(1h) · 캐시읽기 ×0.1 · 웹서치 $0.01/건. 실제 청구와 정합하려면 소스의 단가표를 최신 pricing으로 조정.</div>
+    <div class="legend">비용 Export CSV(cost_usd 포함)를 올리면 실제 청구액을 그대로 합산합니다(토큰 수는 해당 CSV에 없어 '—' 표기). 콘솔 사용량 CSV(토큰 수)를 올리면 아래 단가표로 추정합니다 — 단가(USD, 표준 티어·100만 토큰당): Opus $5/$25 · Sonnet $3/$15 · Haiku $1/$5 · 캐시쓰기 ×1.25(5m)/×2(1h) · 캐시읽기 ×0.1 · 웹서치 $0.01/건.</div>
     <h2>보관된 파일</h2>
     <ul class="flist" id="flist"><li class="empty">불러오는 중…</li></ul>
   </section>
@@ -1001,18 +1001,21 @@ function renderAdminPage(env) {
   }
   var CW5=1.25, CW1H=2, CR=0.1, WEB=0.01;
 
-  // ── CSV 파싱(콘솔 Export 스키마) ──
+  // ── CSV 파싱(콘솔 사용량 스키마 + 비용 Export 스키마 자동 감지) ──
   function parseCSV(text){
     var lines=text.replace(/\\r/g,'').split('\\n').filter(function(l){return l.trim();});
-    if(!lines.length) return {rows:[],header:[]};
+    if(!lines.length) return {rows:[],header:[],schema:'usage'};
     var header=lines[0].split(',');
     var idx={}; header.forEach(function(h,i){idx[h.trim()]=i;});
+    // 스키마 감지: 비용 Export(cost_usd 보유) vs 콘솔 사용량 Export(토큰 수 보유)
+    var schema=('cost_usd' in idx)?'cost':'usage';
     var rows=lines.slice(1).map(function(l){
       var c=l.split(','); var g=function(k){return c[idx[k]];};
       var num=function(k){var v=parseFloat(g(k));return isNaN(v)?0:v;};
-      return {
+      var mv=g('model_version'); var model=((mv!=null?mv:g('model'))||'').trim();
+      var r={
         date:(g('usage_date_utc')||'').trim(),
-        model:(g('model_version')||'').trim(),
+        model:model,
         key:(g('api_key')||'').trim(),
         no_cache:num('usage_input_tokens_no_cache'),
         cw5:num('usage_input_tokens_cache_write_5m'),
@@ -1021,16 +1024,20 @@ function renderAdminPage(env) {
         out:num('usage_output_tokens'),
         web:num('web_search_count')
       };
+      if(schema==='cost'){ r.cost=num('cost_usd'); r.hasCost=true; }
+      return r;
     });
-    return {rows:rows,header:header};
+    return {rows:rows,header:header,schema:schema};
   }
-  function rowCost(r){var p=priceFor(r.model);
+  function rowCost(r){ if(r.hasCost) return r.cost; var p=priceFor(r.model);
     return (r.no_cache*p.i + r.cw5*p.i*CW5 + r.cw1h*p.i*CW1H + r.cr*p.i*CR + r.out*p.o)/1e6 + r.web*WEB;
   }
   function analyze(text,realTotal){
     var parsed=parseCSV(text); var rows=parsed.rows;
     if(!rows.length){ $('#cost-err').textContent='데이터 행을 찾지 못했습니다.'; return; }
     $('#cost-err').textContent='';
+    // 비용 Export 스키마는 토큰 수 컬럼이 없음 → 토큰/웹서치 수치는 '—'로 표기
+    var noTok=(parsed.schema==='cost'); var tf=function(v){return noTok?'&mdash;':fmt(v);};
     var tot={cost:0,inTok:0,out:0,web:0}, byModel={}, byTool={}, byDate={};
     rows.forEach(function(r){
       var cost=rowCost(r); var inTok=r.no_cache+r.cw5+r.cw1h+r.cr;
@@ -1044,20 +1051,20 @@ function renderAdminPage(env) {
     var dates=Object.keys(byDate).sort();
     var maxDay=Math.max.apply(null,dates.map(function(d){return byDate[d].cost;}).concat([0.0001]));
     var range=dates.length?(dates[0]+' ~ '+dates[dates.length-1]):'';
-    var hasReal=(realTotal!=null && !isNaN(realTotal));
+    var hasReal=(realTotal!=null && !isNaN(realTotal)) || noTok;
     var costLabel=(hasReal?'총 비용 · 실제 청구':'총 비용 · 추정')+' ('+esc(range)+')';
-    var costVal=hasReal?usd(realTotal):usd(tot.cost);
+    var costVal=usd((realTotal!=null && !isNaN(realTotal))?realTotal:tot.cost);
     var h='';
     h+='<div class="cards">'
       +'<div class="kcard"><div class="k">'+costLabel+'</div><div class="v">'+costVal+'</div></div>'
-      +'<div class="kcard"><div class="k">입력 토큰</div><div class="v">'+fmt(tot.inTok)+'</div></div>'
-      +'<div class="kcard"><div class="k">출력 토큰</div><div class="v">'+fmt(tot.out)+'</div></div>'
-      +'<div class="kcard"><div class="k">웹서치</div><div class="v">'+fmt(tot.web)+'</div></div>'
+      +'<div class="kcard"><div class="k">입력 토큰</div><div class="v">'+tf(tot.inTok)+'</div></div>'
+      +'<div class="kcard"><div class="k">출력 토큰</div><div class="v">'+tf(tot.out)+'</div></div>'
+      +'<div class="kcard"><div class="k">웹서치</div><div class="v">'+tf(tot.web)+'</div></div>'
       +'</div>';
     // 모델별
     var mk=Object.keys(byModel).sort(function(a,b){return byModel[b].cost-byModel[a].cost;});
     h+='<h2>모델별</h2><table><thead><tr><th>모델</th><th class="n">건수</th><th class="n">입력</th><th class="n">출력</th><th class="n">웹서치</th><th class="n">비용</th><th class="n">비중</th></tr></thead><tbody>';
-    mk.forEach(function(k){var m=byModel[k];h+='<tr><td>'+esc(k)+'</td><td class="n">'+fmt(m.n)+'</td><td class="n">'+fmt(m.inTok)+'</td><td class="n">'+fmt(m.out)+'</td><td class="n">'+fmt(m.web)+'</td><td class="n">'+usd(m.cost)+'</td><td class="n">'+(tot.cost?Math.round(m.cost/tot.cost*100):0)+'%</td></tr>';});
+    mk.forEach(function(k){var m=byModel[k];h+='<tr><td>'+esc(k||'(미상)')+'</td><td class="n">'+fmt(m.n)+'</td><td class="n">'+tf(m.inTok)+'</td><td class="n">'+tf(m.out)+'</td><td class="n">'+tf(m.web)+'</td><td class="n">'+usd(m.cost)+'</td><td class="n">'+(tot.cost?Math.round(m.cost/tot.cost*100):0)+'%</td></tr>';});
     h+='</tbody></table>';
     // 도구(api_key)별
     var tk=Object.keys(byTool).sort(function(a,b){return byTool[b].cost-byTool[a].cost;});
@@ -1074,7 +1081,7 @@ function renderAdminPage(env) {
       var sub='<table class="sub"><thead><tr><th>API 키</th><th class="n">건수</th><th class="n">입력</th><th class="n">출력</th><th class="n">웹서치</th><th class="n">비용</th><th class="n">비중</th></tr></thead><tbody>';
       if(!ks.length){ sub+='<tr><td colspan="7" class="muted">데이터 없음</td></tr>'; }
       ks.forEach(function(k){var t=dd.keys[k];
-        sub+='<tr><td>'+esc(k||'(미상)')+'</td><td class="n">'+fmt(t.n)+'</td><td class="n">'+fmt(t.inTok)+'</td><td class="n">'+fmt(t.out)+'</td><td class="n">'+fmt(t.web)+'</td><td class="n">'+usd(t.cost)+'</td><td class="n">'+(c?Math.round(t.cost/c*100):0)+'%</td></tr>';
+        sub+='<tr><td>'+esc(k||'(미상)')+'</td><td class="n">'+fmt(t.n)+'</td><td class="n">'+tf(t.inTok)+'</td><td class="n">'+tf(t.out)+'</td><td class="n">'+tf(t.web)+'</td><td class="n">'+usd(t.cost)+'</td><td class="n">'+(c?Math.round(t.cost/c*100):0)+'%</td></tr>';
       });
       sub+='</tbody></table>';
       h+='<tr class="drow" data-i="'+i+'"><td colspan="3">'+sub+'</td></tr>';
