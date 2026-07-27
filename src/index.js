@@ -154,7 +154,8 @@ async function handleLogin(request, env, url) {
 // 위치가 변경된 경로(/report, /mi, /2030, /quickshare 등)에 접근하면
 // 안내 문구를 보여준 뒤 5초 카운트다운 후 자동으로 메인(samsungda.net)으로 이동한다.
 // "바로 이동" 버튼으로 즉시 이동할 수도 있다.
-const MOVED_PAGES = new Set(["/report", "/mi", "/2030", "/quickshare"]);
+// /us10y 는 서비스 종료 경로(US 10Y 대시보드 폐지, API 키 회수) — 같은 안내 페이지로 흡수.
+const MOVED_PAGES = new Set(["/report", "/mi", "/2030", "/quickshare", "/us10y"]);
 
 function movedPage() {
   const html = `<!DOCTYPE html>
@@ -496,10 +497,10 @@ async function renderLogsPage(env, url) {
 }
 
 // ── 산하 도구 투명 프록시 ────────────────────────────────────────────────────
-// 예전에는 /us10y·/webauto 도 BACKEND_UPSTREAM(report-site)로 넘어가 report-site가
-// 다시 각 upstream으로 리버스 프록시했다. 이제 포털이 곧장 각 upstream으로 보내
-// report-site 홉을 제거한다. 업스트림의 3xx(트레일링 슬래시 정규화 등)는 브라우저가
-// 처리하도록 manual로 흘려보낸다.
+// 예전에는 /webauto(그리고 폐지 전 /us10y)도 BACKEND_UPSTREAM(report-site)로 넘어가
+// report-site가 다시 각 upstream으로 리버스 프록시했다. 이제 포털이 곧장 upstream으로
+// 보내 report-site 홉을 제거한다. 업스트림의 3xx(트레일링 슬래시 정규화 등)는 브라우저가
+// 처리하도록 manual로 흘려보낸다. US 10Y 대시보드는 서비스 종료로 프록시 자체를 제거했다.
 async function proxyPass(request, target) {
   const headers = new Headers(request.headers);
   headers.delete("host");
@@ -1243,7 +1244,8 @@ export default {
       return assetRes;
     }
 
-    // 위치가 변경된 페이지(/report, /mi, /2030, /quickshare): 안내 후 메인으로 자동 이동
+    // 위치가 변경된 페이지(/report, /mi, /2030, /quickshare)와 종료된 페이지(/us10y):
+    // 안내 후 메인으로 자동 이동
     const normalized = path.replace(/\/+$/, "").toLowerCase() || "/";
     if (request.method === "GET" && MOVED_PAGES.has(normalized)) {
       return movedPage();
@@ -1285,12 +1287,6 @@ export default {
     }
 
     // 산하 도구 직접 프록시 (report-site 경유 제거) — 비밀번호 게이트는 위에서 이미 통과.
-    // US 10Y 대시보드(Railway/Express): serve-static의 트레일링 슬래시 301을 그대로
-    // 흘려보내야 하므로 경로를 가공하지 않고 그대로 전달한다.
-    if (path === "/us10y" || path.startsWith("/us10y/")) {
-      const us10y = (env.US10Y_UPSTREAM || "https://us10y-production.up.railway.app").replace(/\/$/, "");
-      return proxyPass(request, us10y + path + (url.search || ""));
-    }
     // 웹사이트 구축기(website-automation Worker): Worker는 /admin/* 로 서빙하므로
     // /webauto 접두어를 /admin 으로 교체한다. /webauto → /admin, /webauto/x → /admin/x
     if (path === "/webauto" || path.startsWith("/webauto/")) {
