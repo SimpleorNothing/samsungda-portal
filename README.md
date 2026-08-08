@@ -1,5 +1,5 @@
 # samsungda-portal — 기획 도구 모음 (samsungda.net)
-
+ 
 DA 기획팀의 자동화 도구와 조사 결과물을 한곳에 모은 **포털 허브**입니다.
 사이트 전체를 비밀번호로 보호하는 단일 **Cloudflare Worker**로, 정적 포털 페이지·조사 결과물 저장소(R2)·접속 로그(D1)를 직접 처리하고, 나머지 요청은 백엔드(Railway/FastAPI, `report-site`)로 경로 그대로 프록시합니다.
 
